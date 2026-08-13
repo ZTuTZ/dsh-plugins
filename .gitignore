@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+.pnpm-store/
+lib/
+dist/
+资源/
+预览/
+tmp/
