@@ -114,6 +114,7 @@ deepseek-plugin/
     "test": "pnpm -r test"
   },
   "devDependencies": {
+    "lightningcss": "^1.32.0",
     "typescript": "~5.7.2",
     "tsdown": "0.22.2"
   }
