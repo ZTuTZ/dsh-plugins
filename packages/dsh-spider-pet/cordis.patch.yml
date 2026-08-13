@@ -1,0 +1,3 @@
+- insert:
+    - id: spider-pet
+      name: '@deepseek-ai/dsh-spider-pet'
