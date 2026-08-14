@@ -1,7 +1,7 @@
-"""Normalize the BgSub cover cutouts (already transparent, correct
-orientation) onto the shared square skin canvas.
+"""Normalize the BgSub cover cutouts onto the shared square skin canvas,
+mirrored horizontally so the hero faces into the conversation.
 
-Only crops/aligns; never flips. Usage: python3 scripts/build-bgsub-cutouts.py
+Usage: python3 scripts/build-bgsub-cutouts.py
 """
 from PIL import Image, ImageFilter
 import os
@@ -48,6 +48,7 @@ for name, path in SRC.items():
     x1 = min(rgba.size[0], bx1 + pad_x)
     y1 = min(rgba.size[1], by1 + pad_y)
     fig = rgba.crop((x0, y0, x1, y1))
+    fig = fig.transpose(Image.FLIP_LEFT_RIGHT)
     scale = FIG_H / (y1 - y0)
     fw = int((x1 - x0) * scale)
     fig = fig.resize((fw, FIG_H), Image.LANCZOS)
