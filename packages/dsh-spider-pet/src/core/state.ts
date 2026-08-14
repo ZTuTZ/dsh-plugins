@@ -5,7 +5,7 @@
 export type PetActivity = 'idle' | 'waiting' | 'thinking' | 'done'
 
 /** Sprite-sheet animation tracks (rows of the atlas). */
-export type PetAnimation = 'idle' | 'waiting' | 'thinking' | 'jumping' | 'pet'
+export type PetAnimation = 'idle' | 'waiting' | 'thinking' | 'jumping'
 
 const MAP: Record<PetActivity, PetAnimation> = {
   idle: 'idle',
@@ -15,6 +15,8 @@ const MAP: Record<PetActivity, PetAnimation> = {
 }
 
 export function animationFor(activity: PetActivity | undefined, petTriggered: boolean): PetAnimation {
-  if (petTriggered) return 'pet'
+  // A pet interaction plays the happy jump (the dedicated pet pose read as
+  // clipped; the jump row is the cleanest "excited" animation).
+  if (petTriggered) return 'jumping'
   return activity === undefined ? 'idle' : MAP[activity]
 }

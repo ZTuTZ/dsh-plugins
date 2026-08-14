@@ -3,15 +3,13 @@
     "idle": 0,
     "waiting": 1,
     "thinking": 2,
-    "jumping": 3,
-    "pet": 4
+    "jumping": 3
   },
   "frames": [
     16,
     12,
     12,
-    12,
-    10
+    12
   ],
   "cell": {
     "width": 256,

@@ -13,7 +13,6 @@ const FRAME_DURATION_MS: Record<PetAnimation, number> = {
   waiting: 65,
   thinking: 75,
   jumping: 40,
-  pet: 55,
 }
 
 export interface PetViewProps {
@@ -75,9 +74,9 @@ export function PetView(props: PetViewProps): JSX.Element {
     bubbleTimer.current = setTimeout(() => setShowBubble(false), 1200)
   }
 
-  // Status bubble (host activity phrase) takes priority over the pet-name
+  // Status bubble (host activity phrase) takes priority over the happy
   // feedback bubble shown right after a pet interaction.
-  const bubbleText = snapshot.bubble ?? (showBubble ? persist.display.name : undefined)
+  const bubbleText = snapshot.bubble ?? (showBubble ? '嗷呜～' : undefined)
 
   // Hidden: render a summon button at the pet's last position so the pet can
   // always be brought back (the dock row of the reference plugin does the

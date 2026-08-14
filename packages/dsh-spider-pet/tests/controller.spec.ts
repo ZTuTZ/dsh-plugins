@@ -36,7 +36,7 @@ describe('PetController', () => {
     const events: string[] = []
     controller.subscribe(() => events.push('change'))
     controller.interact()
-    expect(controller.getSnapshot().animation).toBe('pet')
+    expect(controller.getSnapshot().animation).toBe('jumping')
     expect(events).toContain('change')
     now = 2000
     expect(controller.getSnapshot().animation).toBe('idle')

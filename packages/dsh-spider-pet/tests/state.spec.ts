@@ -9,9 +9,9 @@ describe('animationFor', () => {
     expect(animationFor('done', false)).toBe('jumping')
   })
 
-  it('pet animation takes priority over idle', () => {
-    expect(animationFor('idle', true)).toBe('pet')
-    expect(animationFor(undefined, true)).toBe('pet')
+  it('pet interaction plays the happy jump over idle', () => {
+    expect(animationFor('idle', true)).toBe('jumping')
+    expect(animationFor(undefined, true)).toBe('jumping')
   })
 
   it('defaults to idle', () => {
