@@ -28,9 +28,10 @@ function keyGreen(input, w, h) {
   const out = Buffer.alloc(w * h * 4)
   for (let i = 0; i < w * h; i++) {
     const o = i * 4
-    let r = input[o]
-    let g = input[o + 1]
-    const b = input[o + 2]
+    const o3 = i * 3
+    let r = input[o3]
+    let g = input[o3 + 1]
+    const b = input[o3 + 2]
     const greenness = g - Math.max(r, b)
     let alpha = 255
     if (greenness > 40) {
@@ -87,18 +88,63 @@ async function keyedPose(name) {
     .raw()
     .toBuffer({ resolveWithObject: true })
   const rgba = keyGreen(resized.data, resized.info.width, resized.info.height)
-  const png = await sharp(rgba, { raw: { width: KEY_SIZE, height: KEY_SIZE, channels: 4 } }).png().toBuffer()
-  return sharp(png).ensureAlpha()
+  return await sharp(rgba, { raw: { width: KEY_SIZE, height: KEY_SIZE, channels: 4 } }).png().toBuffer()
 }
 
 async function spriteCells(name, count) {
-  const img = await keyedPose(name)
-  // trim to the opaque sprite
-  const info = await img
+  const png = await keyedPose(name)
+  const img = sharp(png).ensureAlpha()
+  // Each pose JPEG contains TWO sprites side by side (a seedream quirk).
+  // Split it: find the vertical gap in the opaque column profile and keep the
+  // left sprite so every cell holds exactly one character.
+  const raw = await img.raw().toBuffer({ resolveWithObject: true })
+  const { width: W, height: H, channels: CH } = raw.info
+  const profile = new Int32Array(W)
+  // use the central vertical band so corner vignette noise never seeds a run
+  const y0 = Math.floor(H * 0.2)
+  const y1 = Math.floor(H * 0.8)
+  for (let y = y0; y < y1; y += 2) {
+    for (let x = 0; x < W; x++) {
+      if (raw.data[(y * W + x) * CH + 3] > 120) profile[x]++
+    }
+  }
+  const contentMin = Math.max(3, Math.floor((y1 - y0) / 2 * 0.04))
+  const runs = []
+  let runStart = -1
+  for (let x = 0; x < W; x++) {
+    if (profile[x] > contentMin && runStart < 0) runStart = x
+    if (profile[x] <= contentMin && runStart >= 0) {
+      runs.push([runStart, x - 1])
+      runStart = -1
+    }
+  }
+  if (runStart >= 0) runs.push([runStart, W - 1])
+  // the widest run contains both sprites; split it at the deepest valley
+  let run = runs.sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0]
+  if (!run) run = [0, W - 1]
+  const [start, end] = run
+  let gap = Math.floor((start + end) / 2)
+  let best = Infinity
+  for (let x = start + Math.floor((end - start) * 0.25); x <= end - Math.floor((end - start) * 0.25); x++) {
+    if (profile[x] < best) {
+      best = profile[x]
+      gap = x
+    }
+  }
+  gap = Math.max(start + 1, Math.min(end - 1, gap))
+  console.log(`  ${name}: W=${W} H=${H} run=${start}..${end} gap=${gap} width=${Math.max(2, gap - start + 1)}`)
+  // sharp 0.35 misbehaves when extract() is chained straight into trim();
+  // run them as separate pipelines.
+  const extracted = await sharp(png)
+    .extract({ left: start, top: 0, width: Math.max(2, gap - start + 1), height: H })
+    .png()
+    .toBuffer()
+  const info = await sharp(extracted)
     .trim({ threshold: 120 })
     .raw()
     .toBuffer({ resolveWithObject: true })
   const trimmed = sharp(info.data, { raw: { width: info.info.width, height: info.info.height, channels: info.info.channels } })
+  console.log(`  ${name}: run ${start}..${end}, left sprite ${start}..${gap}`)
   // normalize sprite to a comfortable height inside the cell
   const BASE_H = 196
   const norm = await trimmed.resize({ height: BASE_H, withoutEnlargement: false }).png().toBuffer()
