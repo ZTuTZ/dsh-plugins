@@ -14,6 +14,8 @@ export function mountReveal(images: RevealImages): () => void {
   let wrap: HTMLDivElement | undefined
   let peter: HTMLImageElement | undefined
   let center: HTMLElement | undefined
+  let viewRoot: HTMLElement | undefined
+  let viewRootBackground: string | undefined
 
   const onMove = (event: PointerEvent): void => {
     if (center === undefined || peter === undefined) return
@@ -30,6 +32,16 @@ export function mountReveal(images: RevealImages): () => void {
     if (found === null) return
     center = found
     center.style.position = 'relative'
+
+    // The conversation view root paints an opaque surface that would hide the
+    // background art; make it transparent (bubbles keep their own surfaces).
+    const scrollBody = center.querySelector<HTMLElement>('[data-conversation-scroll]')
+    const root = scrollBody?.parentElement
+    if (root !== undefined && root !== null) {
+      viewRoot = root
+      viewRootBackground = root.style.background
+      root.style.background = 'transparent'
+    }
 
     wrap = document.createElement('div')
     wrap.className = cls('reveal')
@@ -57,6 +69,11 @@ export function mountReveal(images: RevealImages): () => void {
     window.removeEventListener('pointermove', onMove)
     wrap?.remove()
     wrap = undefined
+    if (viewRoot !== undefined) {
+      viewRoot.style.background = viewRootBackground ?? ''
+    }
+    viewRoot = undefined
+    viewRootBackground = undefined
     center = undefined
     peter = undefined
   }
