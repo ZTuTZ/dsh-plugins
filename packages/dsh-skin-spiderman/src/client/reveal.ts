@@ -24,10 +24,10 @@ export function mountReveal(root: HTMLElement, images: RevealImages): () => void
   root.appendChild(wrap)
 
   const onMove = (event: PointerEvent): void => {
-    const rect = wrap.getBoundingClientRect()
-    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / Math.max(1, rect.width)))
-    const clip = `${Math.round(ratio * 100)}% 0`
-    peter.style.clipPath = `inset(0 ${clip})`
+    // Peter is revealed from the left as the pointer moves across the screen.
+    const ratio = Math.min(1, Math.max(0, event.clientX / Math.max(1, window.innerWidth)))
+    const hide = `${Math.round((1 - ratio) * 100)}% 0 0 0`
+    peter.style.clipPath = `inset(0 0 0 ${hide})`
   }
   window.addEventListener('pointermove', onMove)
 

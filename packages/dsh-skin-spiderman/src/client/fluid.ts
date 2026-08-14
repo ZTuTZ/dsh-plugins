@@ -11,7 +11,7 @@ export function mountFluid(root: HTMLElement, options: FluidOptions = {}): () =>
   canvas.dataset.dshSpidermanFluid = ''
   canvas.style.position = 'fixed'
   canvas.style.inset = '0'
-  canvas.style.zIndex = '0'
+  canvas.style.zIndex = '1'
   canvas.style.pointerEvents = 'none'
   root.appendChild(canvas)
 
