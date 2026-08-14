@@ -16,15 +16,15 @@ interface Blob {
   r: number
 }
 
-const IDLE_MS = 1600
-const SAMPLE_TTL_MS = 1800
-const MAX_SAMPLES = 14
+const IDLE_MS = 1500
+const SAMPLE_TTL_MS = 1600
+const MAX_SAMPLES = 12
 
 /**
- * Fluid identity reveal: the suit figure sits behind the conversation pane by
- * default. Moving the pointer paints soft "ink" blobs that trail the cursor
- * and reveal the Peter Parker figure underneath, then fades back to the suit
- * when the pointer rests or leaves the pane.
+ * Fluid identity reveal: the Spider-Man suit figure floats in the middle of the
+ * conversation pane. Hovering the hero paints soft "ink" wakes that follow the
+ * cursor and reveal Peter Parker; moving away or resting fades back to the
+ * suit.
  */
 export function mountReveal(images: RevealImages): () => void {
   let wrap: HTMLDivElement | undefined
@@ -41,6 +41,8 @@ export function mountReveal(images: RevealImages): () => void {
   const parallax = { x: 0, y: 0, tx: 0, ty: 0 }
 
   let rect = { left: 0, top: 0, width: 0, height: 0 }
+  let figureRect = { left: 0, top: 0, width: 0, height: 0 }
+  let peterRect = { left: 0, top: 0, width: 0, height: 0 }
   let lastMove = 0
   let raf = 0
   let reducedMotion = false
@@ -49,21 +51,41 @@ export function mountReveal(images: RevealImages): () => void {
     if (center === undefined) return
     const r = center.getBoundingClientRect()
     if (r.width > 0 && r.height > 0) rect = { left: r.left, top: r.top, width: r.width, height: r.height }
+    if (suit !== undefined) {
+      const f = suit.getBoundingClientRect()
+      if (f.width > 0 && f.height > 0) {
+        figureRect = { left: f.left, top: f.top, width: f.width, height: f.height }
+      }
+    }
+    if (peter !== undefined) {
+      const f = peter.getBoundingClientRect()
+      if (f.width > 0 && f.height > 0) {
+        peterRect = { left: f.left, top: f.top, width: f.width, height: f.height }
+      }
+    }
+  }
+
+  const nearFigure = (clientX: number, clientY: number): boolean => {
+    const margin = Math.max(56, figureRect.height * 0.28)
+    return clientX >= figureRect.left - margin
+      && clientX <= figureRect.left + figureRect.width + margin
+      && clientY >= figureRect.top - margin
+      && clientY <= figureRect.top + figureRect.height + margin
   }
 
   const onMove = (event: PointerEvent): void => {
     if (center === undefined || peter === undefined) return
-    const inside = event.clientX >= rect.left
+    const insidePane = event.clientX >= rect.left
       && event.clientX <= rect.left + rect.width
       && event.clientY >= rect.top
       && event.clientY <= rect.top + rect.height
-    if (!inside) {
+    if (!insidePane || !nearFigure(event.clientX, event.clientY)) {
       target.active = false
       return
     }
     target.active = true
-    target.x = event.clientX - rect.left
-    target.y = event.clientY - rect.top
+    target.x = event.clientX - peterRect.left
+    target.y = event.clientY - peterRect.top
     wake.push({ x: target.x, y: target.y, t: performance.now() })
     if (wake.length > MAX_SAMPLES) wake.splice(0, wake.length - MAX_SAMPLES)
     parallax.tx = (event.clientX - (rect.left + rect.width / 2)) / Math.max(1, rect.width)
@@ -98,6 +120,7 @@ export function mountReveal(images: RevealImages): () => void {
   const tick = (now: number): void => {
     raf = requestAnimationFrame(tick)
     if (peter === undefined || suit === undefined || reducedMotion) return
+    if (peterRect.width <= 0) readRect()
 
     if (target.active && now - lastMove > IDLE_MS) target.active = false
     while (wake.length > 0 && now - wake[0].t > SAMPLE_TTL_MS) wake.shift()
@@ -105,12 +128,10 @@ export function mountReveal(images: RevealImages): () => void {
     const speedMain = 0.16
     const speedTrail = 0.10
     const speedSoft = 0.06
-    const radiusMain = Math.min(230, Math.max(110, rect.width * 0.2))
-    const radiusTrail = radiusMain * 0.72
-    const radiusSoft = radiusMain * 0.5
+    const radiusMain = Math.min(230, Math.max(96, figureRect.height * 0.34))
 
-    const tx = target.active ? target.x : rect.width + 120
-    const ty = target.active ? target.y : rect.height + 160
+    const tx = target.active ? target.x : peterRect.width + 120
+    const ty = target.active ? target.y : peterRect.height + 160
     const tr = target.active ? radiusMain : 0
 
     main.x = lerp(main.x, tx, speedMain)
@@ -125,8 +146,10 @@ export function mountReveal(images: RevealImages): () => void {
 
     parallax.x = lerp(parallax.x, parallax.tx, 0.08)
     parallax.y = lerp(parallax.y, parallax.ty, 0.08)
-    suit.style.transform = `translate3d(${Math.round(parallax.x * -14)}px, ${Math.round(parallax.y * -8)}px, 0) scale(1.04)`
-    peter.style.transform = `translate3d(${Math.round(parallax.x * -6)}px, ${Math.round(parallax.y * -4)}px, 0)`
+    const px = Math.round(parallax.x * -12)
+    const py = Math.round(parallax.y * -8)
+    suit.style.transform = `translate(-50%, -50%) translate3d(${px}px, ${py}px, 0) scale(1.04)`
+    peter.style.transform = `translate(-50%, -50%) translate3d(${Math.round(px * 0.55)}px, ${Math.round(py * 0.55)}px, 0)`
 
     applyMask(now, radiusMain)
   }
@@ -187,8 +210,8 @@ export function mountReveal(images: RevealImages): () => void {
     window.addEventListener('pointermove', onMove, { passive: true })
     window.addEventListener('resize', readRect)
     if (!reducedMotion) {
-      main.x = rect.width + 120
-      main.y = rect.height + 160
+      main.x = peterRect.width + 120
+      main.y = peterRect.height + 160
       trail.x = main.x
       trail.y = main.y
       soft.x = main.x
