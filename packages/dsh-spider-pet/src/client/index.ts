@@ -59,7 +59,7 @@ export function apply(ctx: ClientContext): void {
     id: 'spider-pet',
     order: 140,
     locale: NS,
-    inject: () => ({ controller }),
+    inject: () => ({ scope: settingsScope }),
   }, PluginSettingsCard))
 
   const settingsScope = ctx.settingsScope.bind<{ enabled?: boolean }>({ namespace: 'spider-pet' })

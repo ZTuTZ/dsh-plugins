@@ -334,6 +334,77 @@ body[data-dsh-spiderman] .chrome {
 
 /* ===== Force the dark cinematic look regardless of the OS theme ===== */
 body[data-dsh-spiderman] {
+  /* Static palette must be dark too: the light block above keeps these as
+     near-white, so any official component painting with a static token (e.g.
+     the header title behind the logo) rendered as a white box with light text
+     on top — a white blob where the label vanished. */
+  --dsw-static-neutral-00: rgb(24, 18, 30);
+  --dsw-static-neutral-1000: rgb(240, 234, 238);
+  --dsw-static-neutral-50: rgb(28, 24, 34);
+  --dsw-static-neutral-100: rgb(31, 26, 37);
+  --dsw-static-neutral-150: rgb(35, 30, 41);
+  --dsw-static-neutral-200: rgb(39, 33, 45);
+  --dsw-static-neutral-250: rgb(44, 37, 50);
+  --dsw-static-neutral-300: rgb(49, 42, 55);
+  --dsw-static-neutral-400: rgb(70, 62, 78);
+  --dsw-static-neutral-500: rgb(90, 80, 100);
+  --dsw-static-neutral-550: rgb(104, 94, 114);
+  --dsw-static-neutral-600: rgb(120, 110, 130);
+  --dsw-static-neutral-700: rgb(140, 132, 150);
+  --dsw-static-neutral-800: rgb(160, 154, 168);
+  --dsw-static-neutral-850: rgb(176, 170, 184);
+  --dsw-static-neutral-900: rgb(194, 189, 200);
+  --dsw-static-neutral-bluish-00: rgb(24, 18, 30);
+  --dsw-static-neutral-bluish-1000: rgb(240, 234, 238);
+  --dsw-static-neutral-bluish-50: rgb(28, 23, 34);
+  --dsw-static-neutral-bluish-60: rgb(28, 23, 34);
+  --dsw-static-neutral-bluish-75: rgb(32, 26, 38);
+  --dsw-static-neutral-bluish-100: rgb(34, 28, 40);
+  --dsw-static-neutral-bluish-150: rgb(38, 31, 44);
+  --dsw-static-neutral-bluish-200: rgb(43, 36, 49);
+  --dsw-static-neutral-bluish-300: rgb(52, 44, 58);
+  --dsw-static-neutral-bluish-400: rgb(66, 57, 73);
+  --dsw-static-neutral-bluish-500: rgb(84, 74, 92);
+  --dsw-static-neutral-bluish-600: rgb(102, 92, 110);
+  --dsw-static-neutral-bluish-700: rgb(122, 113, 130);
+  --dsw-static-neutral-bluish-750: rgb(140, 132, 148);
+  --dsw-static-neutral-bluish-800: rgb(158, 152, 166);
+  --dsw-static-neutral-bluish-850: rgb(174, 169, 180);
+  --dsw-static-neutral-bluish-875: rgb(186, 181, 191);
+  --dsw-static-neutral-bluish-900: rgb(198, 194, 202);
+  --dsw-static-neutral-bluish-950: rgb(210, 207, 215);
+  --dsw-static-deepseek-50: rgb(48, 18, 22);
+  --dsw-static-deepseek-100: rgb(58, 20, 25);
+  --dsw-static-deepseek-200: rgb(72, 22, 28);
+  --dsw-static-deepseek-300: rgb(96, 26, 33);
+  --dsw-static-deepseek-400: rgb(130, 30, 38);
+  --dsw-static-deepseek-450: rgb(160, 34, 44);
+  --dsw-static-deepseek-500: rgb(217, 43, 58);
+  --dsw-static-deepseek-600: rgb(230, 84, 96);
+  --dsw-static-deepseek-700-delete: rgb(238, 122, 131);
+  --dsw-static-deepseek-800: rgb(245, 176, 181);
+  --dsw-static-deepseek-900: rgb(250, 214, 216);
+  --dsw-static-blue-50: rgb(24, 40, 66);
+  --dsw-static-blue-50p: rgb(26, 44, 72);
+  --dsw-static-blue-75: rgb(28, 47, 78);
+  --dsw-static-blue-100: rgb(32, 56, 96);
+  --dsw-static-blue-300: rgb(43, 74, 124);
+  --dsw-static-blue-400: rgb(55, 92, 150);
+  --dsw-static-blue-450: rgb(63, 104, 168);
+  --dsw-static-blue-500: rgb(83, 130, 208);
+  --dsw-static-blue-600: rgb(108, 152, 222);
+  --dsw-static-blue-800: rgb(152, 188, 236);
+  --dsw-static-blue-900: rgb(196, 218, 246);
+  --dsw-static-blue-950: rgb(224, 235, 250);
+  --dsw-static-red-100: rgb(80, 26, 22);
+  --dsw-static-red-400: rgb(206, 66, 54);
+  --dsw-static-red-500: rgb(231, 76, 60);
+  --dsw-static-red-600: rgb(236, 104, 90);
+  --dsw-static-red-800: rgb(247, 172, 163);
+  --dsw-static-red-900: rgb(251, 216, 211);
+  --dsw-static-amber-400: rgb(214, 154, 58);
+  --dsw-static-amber-500: rgb(176, 118, 0);
+  --dsw-static-amber-600: rgb(150, 99, 0);
   --dsw-alias-bg-base: rgb(24, 18, 30);
   --dsw-alias-bg-layer-1: rgb(31, 24, 38);
   --dsw-alias-bg-layer-2: rgb(37, 29, 44);
