@@ -31,13 +31,13 @@ export function loadPersist(
     const raw = storage.getItem(PET_STORAGE_KEY)
     if (!raw) return fallback
     const parsed = JSON.parse(raw) as Partial<PetPersist>
-    const storedName = typeof parsed.display?.name === 'string' ? parsed.display.name : undefined
     return {
       display: {
         ...fallback.display,
         ...parsed.display,
-        // The old default name was superseded by Peter Parker.
-        ...(storedName === '蛛蛛侠' ? { name: fallback.display.name } : {}),
+        // The pet name is fixed (the rename feature was removed): always use
+        // the default instead of any legacy value lingering in storage.
+        name: fallback.display.name,
       },
     }
   } catch {

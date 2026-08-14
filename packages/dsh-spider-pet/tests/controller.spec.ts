@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { PetController, loadPersist, type PetPersist } from '../src/core/controller.ts'
+import { PetController, defaultPersist, loadPersist } from '../src/core/controller.ts'
 
-const fallback: PetPersist = {
-  display: { visible: true, size: 160, right: 24, bottom: 20, name: '蛛蛛侠' },
-}
+const fallback = defaultPersist
 
 function memoryStorage(initial?: string): Storage {
   let value = initial ?? null
@@ -20,12 +18,14 @@ function memoryStorage(initial?: string): Storage {
 describe('loadPersist', () => {
   it('falls back to defaults on empty storage', () => {
     const p = loadPersist(memoryStorage(), fallback)
-    expect(p.display.name).toBe('蛛蛛侠')
+    expect(p.display.name).toBe('Peter Parker')
   })
 
-  it('parses stored JSON', () => {
-    const s = memoryStorage(JSON.stringify({ display: { ...fallback.display, name: '小蛛' } }))
-    expect(loadPersist(s, fallback).display.name).toBe('小蛛')
+  it('parses stored JSON but keeps the fixed pet name', () => {
+    const s = memoryStorage(JSON.stringify({ display: { ...fallback.display, name: '小蛛', size: 200 } }))
+    const p = loadPersist(s, fallback)
+    expect(p.display.size).toBe(200)
+    expect(p.display.name).toBe('Peter Parker')
   })
 })
 

@@ -26,14 +26,19 @@ export interface PetViewProps {
   onDrag: (event: React.PointerEvent) => void
 }
 
-export function PetView(props: PetViewProps): JSX.Element {
+export function PetView(props: PetViewProps): JSX.Element | null {
+  const snapshot = props.controller.getSnapshot()
+  const animation: PetAnimation = snapshot.animation
+
+  // Master switch off: render nothing — the app-restore button lives at the
+  // plugin level, and the hidden-state summon must not survive an app close.
+  // Must sit before any hooks so the hook order stays stable across toggles.
+  if (!snapshot.appEnabled) return null
+
   const [frame, setFrame] = useState(0)
   const frameRef = useRef(0)
   const [showBubble, setShowBubble] = useState(false)
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-
-  const snapshot = props.controller.getSnapshot()
-  const animation: PetAnimation = snapshot.animation
 
   useEffect(() => {
     // Restart the track from its first frame whenever the animation changes,
