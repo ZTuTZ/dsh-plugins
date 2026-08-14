@@ -317,20 +317,15 @@ body[data-dsh-spiderman][data-ds-dark-theme] {
   --dsw-specific-tip: rgb(28, 22, 34);
 }
 
-/* ===== Surface: conversation pane shows the background art; sidebar stays solid ===== */
-body[data-dsh-spiderman] [data-pane='conversation'] {
-  background: rgba(18, 12, 24, 0.52);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+/* ===== Surface: the app frame is translucent so the fullscreen background
+   art shows through the conversation column; the sidebar column keeps its
+   own solid --dsw-specific-sidebar-fill and stays opaque. ===== */
+body[data-dsh-spiderman] #root {
+  background: transparent;
 }
 
-body[data-dsh-spiderman] [data-pane='conversation'] [data-dsh-spiderman-reveal] {
-  z-index: 0;
-}
-
-body[data-dsh-spiderman] [data-pane='conversation'] > * {
-  position: relative;
-  z-index: 1;
+body[data-dsh-spiderman] #root > * {
+  background: rgba(18, 12, 24, 0.55);
 }
 
 body[data-dsh-spiderman] .chrome {

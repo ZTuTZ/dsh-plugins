@@ -2,8 +2,6 @@ import css from './reveal.module.css'
 
 const cls = (name: keyof typeof css): string => css[name] ?? ''
 
-const CONVERSATION_PANE = '[data-pane="conversation"]'
-
 export interface RevealImages {
   peter: string
   suit: string
@@ -12,23 +10,23 @@ export interface RevealImages {
 export function mountReveal(images: RevealImages): () => void {
   let wrap: HTMLDivElement | undefined
   let peter: HTMLImageElement | undefined
-  let pane: HTMLElement | undefined
+  let root: HTMLElement | undefined
 
   const onMove = (event: PointerEvent): void => {
-    if (pane === undefined || peter === undefined) return
-    const rect = pane.getBoundingClientRect()
+    if (root === undefined || peter === undefined) return
+    const rect = root.getBoundingClientRect()
     if (rect.width <= 0) return
-    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
+    // Reveal across the center area of the screen (the conversation column).
+    const centerLeft = rect.left + rect.width * 0.22
+    const ratio = Math.min(1, Math.max(0, (event.clientX - centerLeft) / (rect.width * 0.78)))
     const hide = `${Math.round((1 - ratio) * 100)}% 0 0 0`
     peter.style.clipPath = `inset(0 0 0 ${hide})`
   }
 
   const ensure = (): void => {
     if (wrap !== undefined) return
-    const found = document.querySelector<HTMLElement>(CONVERSATION_PANE)
-    if (found === null) return
-    pane = found
-    pane.style.position = 'relative'
+    root = document.body
+    if (root === undefined) return
 
     wrap = document.createElement('div')
     wrap.className = cls('reveal')
@@ -43,20 +41,17 @@ export function mountReveal(images: RevealImages): () => void {
     peter.src = images.peter
     peter.alt = ''
     wrap.append(suit, peter)
-    pane.appendChild(wrap)
+    root.appendChild(wrap)
     window.addEventListener('pointermove', onMove)
   }
 
-  const observer = new MutationObserver(() => { ensure() })
-  observer.observe(document.body, { childList: true, subtree: true })
   ensure()
 
   return () => {
-    observer.disconnect()
     window.removeEventListener('pointermove', onMove)
     wrap?.remove()
     wrap = undefined
-    pane = undefined
+    root = undefined
     peter = undefined
   }
 }
