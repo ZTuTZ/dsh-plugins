@@ -12,6 +12,7 @@ export interface RevealImages {
 
 export function mountReveal(images: RevealImages): () => void {
   let wrap: HTMLDivElement | undefined
+  let suit: HTMLImageElement | undefined
   let peter: HTMLImageElement | undefined
   let center: HTMLElement | undefined
   let viewRoot: HTMLElement | undefined
@@ -24,6 +25,10 @@ export function mountReveal(images: RevealImages): () => void {
     const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
     const hide = `${Math.round((1 - ratio) * 100)}% 0 0 0`
     peter.style.clipPath = `inset(0 0 0 ${hide})`
+    if (suit !== undefined) {
+      const shift = Math.round((ratio - 0.5) * -24)
+      suit.style.transform = `translateX(${shift}px) scale(1.06)`
+    }
   }
 
   const ensure = (): void => {
@@ -41,13 +46,15 @@ export function mountReveal(images: RevealImages): () => void {
       viewRoot = root
       viewRootBackground = root.style.background
       root.style.background = 'transparent'
+      root.style.position = 'relative'
+      root.style.zIndex = '1'
     }
 
     wrap = document.createElement('div')
     wrap.className = cls('reveal')
     wrap.dataset.dshSpidermanReveal = ''
 
-    const suit = document.createElement('img')
+    suit = document.createElement('img')
     suit.className = cls('layer') + ' ' + cls('suit')
     suit.src = images.suit
     suit.alt = ''
@@ -56,7 +63,7 @@ export function mountReveal(images: RevealImages): () => void {
     peter.src = images.peter
     peter.alt = ''
     wrap.append(suit, peter)
-    center.appendChild(wrap)
+    center.prepend(wrap)
     window.addEventListener('pointermove', onMove)
   }
 
@@ -69,8 +76,11 @@ export function mountReveal(images: RevealImages): () => void {
     window.removeEventListener('pointermove', onMove)
     wrap?.remove()
     wrap = undefined
+    suit = undefined
     if (viewRoot !== undefined) {
       viewRoot.style.background = viewRootBackground ?? ''
+      viewRoot.style.position = ''
+      viewRoot.style.zIndex = ''
     }
     viewRoot = undefined
     viewRootBackground = undefined
