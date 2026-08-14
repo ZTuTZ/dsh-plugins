@@ -10,6 +10,7 @@ export function mountPet(
   meta: SpriteSheetMeta,
   table: FrameTable,
   sheetUrl: string,
+  onDisableApp: () => void,
 ): () => void {
   const container = document.createElement('div')
   container.dataset.dshSpiderPetRoot = ''
@@ -49,6 +50,7 @@ export function mountPet(
         onPanel={togglePanel}
         panelOpen={panelOpen}
         onDrag={onDrag}
+        onDisableApp={onDisableApp}
       />,
     )
   }

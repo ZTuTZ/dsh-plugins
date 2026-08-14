@@ -1,21 +1,30 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { PETER_URL, SUIT_URL } from '../assets/reveal.ts'
 import { mountReveal } from './reveal.ts'
 import css from './spiderman.module.css'
 
 const cls = (name: keyof typeof css): string => css[name] ?? ''
 
-/** The skin obeys the spider-app master switch owned by dsh-spider-pet.
- *  settingsScope rides on the connection/remote services, so declare them. */
-export const inject = ['connection', 'remote', 'settingsScope']
+/** Shared spider-app master switch (mirrors dsh-spider-pet's constants;
+ *  cross-plugin value imports are forbidden by the client purity gate). */
+const APP_STORAGE_KEY = 'dsh.spiderApp.v1'
+const APP_TOGGLE_EVENT = 'dsh:spider-app-toggle'
+
+function readAppEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem(APP_STORAGE_KEY)
+    if (!raw) return true
+    const parsed = JSON.parse(raw) as { enabled?: unknown }
+    return parsed.enabled !== false
+  } catch {
+    return true
+  }
+}
 
 export function apply(ctx: Context): void {
-  const settingsScope = ctx.settingsScope.bind<{ enabled?: boolean }>({ namespace: 'spider-pet' })
   let disposer: (() => void) | undefined
   const sync = (): void => {
-    const scope = settingsScope.getSnapshot()
-    const enabled = scope.status === 'ready' ? (scope.value?.enabled ?? true) : true
+    const enabled = readAppEnabled()
     if (enabled) {
       if (disposer !== undefined) return
       disposer = ctx.effect(() => {
@@ -40,6 +49,13 @@ export function apply(ctx: Context): void {
       disposer = undefined
     }
   }
-  settingsScope.subscribe(sync)
+  const onToggle = (event: Event): void => {
+    const enabled = (event as CustomEvent<{ enabled?: boolean }>).detail?.enabled
+    if (typeof enabled === 'boolean') sync()
+  }
+  window.addEventListener(APP_TOGGLE_EVENT, onToggle)
+  window.addEventListener('storage', (event) => {
+    if (event.key === APP_STORAGE_KEY) sync()
+  })
   sync()
 }

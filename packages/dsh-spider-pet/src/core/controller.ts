@@ -15,6 +15,9 @@ export interface PetPersist {
 }
 
 export const PET_STORAGE_KEY = 'dsh.spiderPet.v1'
+/** Shared spider-app master switch (pet + skin), persisted across sessions. */
+export const APP_STORAGE_KEY = 'dsh.spiderApp.v1'
+export const APP_TOGGLE_EVENT = 'dsh:spider-app-toggle'
 
 export const defaultPersist: PetPersist = {
   display: { visible: true, size: 160, right: 24, bottom: 20, name: '蛛蛛侠' },
@@ -47,6 +50,18 @@ export function savePersist(
   }
 }
 
+/** Read the shared spider-app master switch (default on). */
+export function readAppEnabled(storage: Pick<Storage, 'getItem'>): boolean {
+  try {
+    const raw = storage.getItem(APP_STORAGE_KEY)
+    if (!raw) return true
+    const parsed = JSON.parse(raw) as { enabled?: unknown }
+    return parsed.enabled !== false
+  } catch {
+    return true
+  }
+}
+
 export interface PetControllerDeps {
   storage: Pick<Storage, 'getItem' | 'setItem'>
   now?: () => number
@@ -54,6 +69,7 @@ export interface PetControllerDeps {
 
 export class PetController {
   private persist: PetPersist
+  private appEnabled: boolean
   private activity: PetActivity = 'idle'
   private petTriggeredAt = Number.NEGATIVE_INFINITY
   /** Status phrase/line from the host activity tracker, shown as a bubble. */
@@ -66,6 +82,7 @@ export class PetController {
   constructor(private readonly deps: PetControllerDeps) {
     this.now = deps.now ?? (() => Date.now())
     this.persist = loadPersist(deps.storage, defaultPersist)
+    this.appEnabled = readAppEnabled(deps.storage)
   }
 
   getSnapshot(): {
@@ -73,6 +90,7 @@ export class PetController {
     activity: PetActivity
     animation: PetAnimation
     bubble: string | undefined
+    appEnabled: boolean
   } {
     const petTriggered = this.now() - this.petTriggeredAt < this.petWindowMs
     const animation = animationFor(this.activity, petTriggered)
@@ -81,6 +99,7 @@ export class PetController {
       activity: this.activity,
       animation,
       bubble: this.bubble,
+      appEnabled: this.appEnabled,
     }
   }
 
@@ -106,6 +125,23 @@ export class PetController {
   interact(): void {
     this.petTriggeredAt = this.now()
     this.notify()
+  }
+
+  /** Master switch for the whole spider app (pet + skin). */
+  getAppEnabled(): boolean {
+    return this.appEnabled
+  }
+
+  setAppEnabled(enabled: boolean): void {
+    if (this.appEnabled === enabled) return
+    this.appEnabled = enabled
+    try {
+      this.deps.storage.setItem(APP_STORAGE_KEY, JSON.stringify({ enabled }))
+    } catch {
+      // Storage unavailable: keep in-memory state working this session.
+    }
+    this.notify()
+    window.dispatchEvent(new CustomEvent(APP_TOGGLE_EVENT, { detail: { enabled } }))
   }
 
   setDisplay(patch: Partial<PetPersist['display']>): void {

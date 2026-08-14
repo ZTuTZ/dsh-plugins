@@ -24,6 +24,7 @@ export interface PetViewProps {
   onPanel: () => void
   panelOpen: boolean
   onDrag: (event: React.PointerEvent) => void
+  onDisableApp: () => void
 }
 
 export function PetView(props: PetViewProps): JSX.Element {
@@ -117,7 +118,7 @@ export function PetView(props: PetViewProps): JSX.Element {
           backgroundPosition: `-${Math.round(pos.x * scale)}px -${Math.round(pos.y * scale)}px`,
         }}
       />
-      {props.panelOpen ? <PetPanel controller={props.controller} onClose={props.onPanel} /> : null}
+      {props.panelOpen ? <PetPanel controller={props.controller} onClose={props.onPanel} onDisableApp={props.onDisableApp} /> : null}
     </div>
   )
 }

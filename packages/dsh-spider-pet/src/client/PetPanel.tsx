@@ -4,6 +4,8 @@ import css from './pet.module.css'
 export interface PetPanelProps {
   controller: PetController
   onClose: () => void
+  /** Turn the whole spider app (pet + skin) off. */
+  onDisableApp: () => void
 }
 
 export function PetPanel(props: PetPanelProps): JSX.Element {
@@ -15,6 +17,9 @@ export function PetPanel(props: PetPanelProps): JSX.Element {
       </div>
       <div className={css.panelRow}>
         <button type="button" onClick={() => { props.controller.setDisplay({ visible: false }); props.onClose() }}>隐藏</button>
+      </div>
+      <div className={css.panelRow}>
+        <button type="button" onClick={() => { props.onDisableApp(); props.onClose() }}>关闭应用</button>
       </div>
     </div>
   )
