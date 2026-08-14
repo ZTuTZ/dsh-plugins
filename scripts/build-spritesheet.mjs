@@ -174,7 +174,14 @@ async function spriteCells(name, count) {
     }
     const w = Math.max(1, Math.round(nm.width * (tr.scaleX ?? 1)))
     const h = Math.max(1, Math.round(BASE_H * (tr.scaleY ?? 1)))
-    const buf = await layer.resize(w, h).png().toBuffer()
+    // Fit "contain": the jump/squash frames change the aspect ratio
+    // (scaleX != scaleY), and the default "cover" mode scales up to fill
+    // and then CROPS the overflow — chopping the raised hand / head top and
+    // the feet with flat horizontal cuts. Contain keeps the whole sprite.
+    const buf = await layer
+      .resize(w, h, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png()
+      .toBuffer()
     const m = await sharp(buf).metadata()
     const cell = sharp({
       create: { width: CELL, height: CELL, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
