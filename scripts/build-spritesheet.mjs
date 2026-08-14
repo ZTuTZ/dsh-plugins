@@ -1,11 +1,12 @@
 /**
  * Build the pet sprite sheet from the six pose frames.
  *
- * Each pose JPEG (green background) is resized to a 256x256 cell, chroma-key
- * cut to transparent, and placed on its row of an 8-column sheet. Outputs:
+ * Each pose JPEG (green background) is chroma-keyed at high resolution, then
+ * expanded into a smooth per-pose animation (breathing, bounce, sway, jump…)
+ * so every cell in the row is filled. Outputs:
  *   素材/spidey/spritesheet.png / .webp
  *   素材/spidey/pet.json
- *   packages/dsh-spider-pet/src/assets/spritesheet.ts  (WebP base64 data URL)
+ *   packages/dsh-spider-pet/src/assets/spritesheet.ts
  *
  * Usage: node scripts/build-spritesheet.mjs
  */
@@ -14,27 +15,29 @@ import { join } from 'node:path'
 import sharp from 'sharp'
 
 const POSES = ['idle', 'waiting', 'thinking', 'jumping', 'pet', 'failed']
-const FRAMES = [6, 6, 6, 5, 4, 4]
+const FRAMES = [8, 6, 6, 6, 5, 5]
 const CELL = 256
 const COLS = 8
 const ROOT = process.cwd()
 const SRC_DIR = join(ROOT, '素材/spidey/pet-poses')
 const OUT_DIR = join(ROOT, '素材/spidey')
+const KEY_SIZE = 1024
 
-/** Chroma-key the green background to transparent (key approx #3fd771). */
-function cutGreen(input, width, height) {
-  const out = Buffer.alloc(width * height * 4)
-  for (let i = 0; i < width * height; i++) {
+/** Chroma-key the green background (key approx #3fd771) with despill. */
+function keyGreen(input, w, h) {
+  const out = Buffer.alloc(w * h * 4)
+  for (let i = 0; i < w * h; i++) {
     const o = i * 4
-    const r = input[o]
-    const g = input[o + 1]
+    let r = input[o]
+    let g = input[o + 1]
     const b = input[o + 2]
     const greenness = g - Math.max(r, b)
     let alpha = 255
-    if (greenness > 42) {
+    if (greenness > 40) {
       alpha = 0
-    } else if (greenness > 12) {
-      alpha = Math.round(255 * (1 - (greenness - 12) / 30))
+    } else if (greenness > 10) {
+      alpha = Math.round(255 * (1 - (greenness - 10) / 30))
+      g = Math.min(r, b) + Math.round((g - Math.min(r, b)) * 0.35)
     }
     out[o] = r
     out[o + 1] = g
@@ -44,36 +47,115 @@ function cutGreen(input, width, height) {
   return out
 }
 
-const rows = {}
-const composites = []
-for (let r = 0; r < POSES.length; r++) {
-  const name = POSES[r]
-  rows[name] = r
+/** Per-pose animation transforms (frame index -> {dx, dy, scaleX, scaleY, angle}). */
+function frameTransform(pose, index, count) {
+  const t = index / Math.max(1, count - 1)
+  const phase = (index / count) * Math.PI * 2
+  switch (pose) {
+    case 'idle': // breathing: gentle vertical bob + chest swell
+      return { dx: 0, dy: Math.round(Math.sin(phase) * 2.5), scaleX: 1, scaleY: 1 + Math.sin(phase) * 0.02 }
+    case 'waiting': // light foot-tap bounce
+      return { dx: 0, dy: Math.round(Math.sin(phase) * 4), scaleX: 1, scaleY: 1 + Math.sin(phase) * 0.015 }
+    case 'thinking': // slow head sway
+      return { dx: 0, dy: 0, angle: Math.sin(phase) * 2.2 }
+    case 'jumping': // jump arc: squash at takeoff/land, rise mid-air
+      return {
+        dx: 0,
+        dy: Math.round(-Math.sin(t * Math.PI) * 42),
+        scaleX: 1 + Math.sin(t * Math.PI) * 0.05,
+        scaleY: 1 - Math.sin(t * Math.PI) * 0.06,
+      }
+    case 'pet': // happy squash & stretch bounce
+      return {
+        dx: 0,
+        dy: Math.round(-Math.abs(Math.sin(phase)) * 9),
+        scaleX: 1 - Math.sin(phase) * 0.05,
+        scaleY: 1 + Math.sin(phase) * 0.09,
+      }
+    case 'failed': // slow side-to-side wiggle
+      return { dx: 0, dy: 0, angle: Math.sin(phase) * 3.5 }
+    default:
+      return { dx: 0, dy: 0, scaleX: 1, scaleY: 1 }
+  }
+}
+
+async function keyedPose(name) {
   const file = join(SRC_DIR, `${name}.jpeg`)
   const resized = await sharp(readFileSync(file))
-    .resize(CELL, CELL, { fit: 'cover' })
+    .resize(KEY_SIZE, KEY_SIZE, { fit: 'cover' })
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
-  const rgba = cutGreen(resized.data, resized.info.width, resized.info.height)
-  composites.push({
-    input: await sharp(rgba, { raw: { width: CELL, height: CELL, channels: 4 } }).png().toBuffer(),
-    left: 0,
-    top: r * CELL,
-  })
+  const rgba = keyGreen(resized.data, resized.info.width, resized.info.height)
+  const png = await sharp(rgba, { raw: { width: KEY_SIZE, height: KEY_SIZE, channels: 4 } }).png().toBuffer()
+  return sharp(png).ensureAlpha()
 }
 
+async function spriteCells(name, count) {
+  const img = await keyedPose(name)
+  // trim to the opaque sprite
+  const info = await img
+    .trim({ threshold: 120 })
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const trimmed = sharp(info.data, { raw: { width: info.info.width, height: info.info.height, channels: info.info.channels } })
+  // normalize sprite to a comfortable height inside the cell
+  const BASE_H = 196
+  const norm = await trimmed.resize({ height: BASE_H, withoutEnlargement: false }).png().toBuffer()
+  const nm = await sharp(norm).metadata()
+  const cells = []
+  for (let f = 0; f < count; f++) {
+    const tr = frameTransform(name, f, count)
+    let layer = sharp(norm)
+    if (tr.angle) {
+      layer = layer.rotate(tr.angle, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    }
+    const w = Math.max(1, Math.round(nm.width * (tr.scaleX ?? 1)))
+    const h = Math.max(1, Math.round(BASE_H * (tr.scaleY ?? 1)))
+    const buf = await layer.resize(w, h).png().toBuffer()
+    const m = await sharp(buf).metadata()
+    const cell = sharp({
+      create: { width: CELL, height: CELL, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+    cells.push({
+      input: buf,
+      left: Math.round((CELL - m.width) / 2 + (tr.dx ?? 0)),
+      top: Math.round((CELL - m.height) / 2 + (tr.dy ?? 0)),
+      w: m.width,
+      h: m.height,
+    })
+  }
+  return { cells }
+}
+
+const composites = []
+for (let r = 0; r < POSES.length; r++) {
+  const name = POSES[r]
+  const count = FRAMES[r]
+  const { cells } = await spriteCells(name, count)
+  for (let f = 0; f < count; f++) {
+    composites.push({
+      input: cells[f].input,
+      left: f * CELL + cells[f].left,
+      top: r * CELL + cells[f].top,
+    })
+  }
+  console.log(`ok ${name}: ${count} frames`)
+}
+
+const SHEET_W = COLS * CELL
+const SHEET_H = POSES.length * CELL
 const canvas = sharp({
-  create: { width: COLS * CELL, height: POSES.length * CELL, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  create: { width: SHEET_W, height: SHEET_H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
 })
 const png = await canvas.composite(composites).png().toBuffer()
-const webp = await canvas.composite(composites).webp({ quality: 80 }).toBuffer()
+const webp = await canvas.composite(composites).webp({ quality: 82 }).toBuffer()
 
 mkdirSync(OUT_DIR, { recursive: true })
 writeFileSync(join(OUT_DIR, 'spritesheet.png'), png)
 writeFileSync(join(OUT_DIR, 'spritesheet.webp'), webp)
 writeFileSync(join(OUT_DIR, 'pet.json'), JSON.stringify({
-  rows,
+  rows: Object.fromEntries(POSES.map((p, i) => [p, i])),
   frames: FRAMES,
   cell: { width: CELL, height: CELL },
 }, null, 2) + '\n')
@@ -82,4 +164,4 @@ writeFileSync(
   '/** Sprite sheet as WebP base64 data URL (no static file shipped). */\n' +
     `export const SPRITE_SHEET_URL = 'data:image/webp;base64,${webp.toString('base64')}'\n`,
 )
-console.log('wrote spritesheet.png, spritesheet.webp, pet.json and spritesheet.ts')
+console.log(`wrote spritesheet ${SHEET_W}x${SHEET_H}, pet.json, spritesheet.ts`)

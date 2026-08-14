@@ -17,7 +17,7 @@ export const SPRITE_META = { framesPerRow: 8, cellWidth: 256, cellHeight: 256 } 
 
 export const FRAME_TABLE: FrameTable = {
   rows: { idle: 0, waiting: 1, thinking: 2, jumping: 3, pet: 4, failed: 5 },
-  frames: [6, 6, 6, 5, 4, 4],
+  frames: [8, 6, 6, 6, 5, 5],
 }
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {

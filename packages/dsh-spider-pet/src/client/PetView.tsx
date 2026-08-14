@@ -28,7 +28,7 @@ export function PetView(props: PetViewProps): JSX.Element {
       const total = totalFrames(props.table)
       frameRef.current = (frameRef.current + 1) % total
       setFrame(frameRef.current)
-    }, 120)
+    }, 100)
     return () => clearInterval(timer)
   }, [props.table])
 
@@ -38,6 +38,9 @@ export function PetView(props: PetViewProps): JSX.Element {
   const row = props.table.rows[animation] ?? props.table.rows.idle ?? 0
   const index = frame % (props.table.frames[row] ?? 1)
   const pos = framePosition(props.meta, row, index)
+  // The pet element may be resized; scale the sheet so one cell exactly fills
+  // the element (whole sprite visible, no cropping by the window).
+  const scale = persist.display.size / props.meta.cellWidth
 
   const handleClick = (): void => {
     props.onInteract()
@@ -62,8 +65,8 @@ export function PetView(props: PetViewProps): JSX.Element {
         className={css.petSprite}
         style={{
           backgroundImage: `url(${props.sheetUrl})`,
-          backgroundSize: `${props.meta.framesPerRow * props.meta.cellWidth}px ${props.meta.cellHeight}px`,
-          backgroundPosition: `-${pos.x}px -${pos.y}px`,
+          backgroundSize: `${props.meta.framesPerRow * props.meta.cellWidth * scale}px ${Object.keys(props.table.rows).length * props.meta.cellHeight * scale}px`,
+          backgroundPosition: `-${Math.round(pos.x * scale)}px -${Math.round(pos.y * scale)}px`,
         }}
       />
       {props.panelOpen ? <PetPanel controller={props.controller} onClose={props.onPanel} /> : null}
