@@ -14,11 +14,11 @@ export const inject = ['slots', 'locale', 'settingsScope']
 
 const NS = 'spider-pet'
 
-export const SPRITE_META = { framesPerRow: 8, cellWidth: 256, cellHeight: 256 } as const
+export const SPRITE_META = { framesPerRow: 16, cellWidth: 256, cellHeight: 256 } as const
 
 export const FRAME_TABLE: FrameTable = {
   rows: { idle: 0, waiting: 1, thinking: 2, jumping: 3, pet: 4 },
-  frames: [8, 6, 6, 6, 5],
+  frames: [16, 12, 12, 12, 10],
 }
 
 /** Host `activity/status` phase → pet activity (`tool` shares the thinking row). */

@@ -15,13 +15,15 @@ import { join } from 'node:path'
 import sharp from 'sharp'
 
 const POSES = ['idle', 'waiting', 'thinking', 'jumping', 'pet']
-const FRAMES = [8, 6, 6, 6, 5]
+// Double the frame count per pose for smoother animation (the atlas keeps a
+// 16-column row, so 16/12/12/12/10 frames fit without changing cell size).
+const FRAMES = [16, 12, 12, 12, 10]
 // All five poses were regenerated as single full-body characters (the old
 // JPEGs held two sprites side by side, which is why this split existed).
 // Splitting any of them would cut the right arm off at the shoulder.
 const SPLIT_POSES = new Set([])
 const CELL = 256
-const COLS = 8
+const COLS = 16
 const ROOT = process.cwd()
 const SRC_DIR = join(ROOT, '素材/spidey/pet-poses')
 const OUT_DIR = join(ROOT, '素材/spidey')
@@ -84,9 +86,11 @@ function frameTransform(pose, index, count) {
     case 'pet': // happy squash & stretch bounce
       return {
         dx: 0,
-        dy: Math.round(-Math.abs(Math.sin(phase)) * 9),
-        scaleX: 1 - Math.sin(phase) * 0.05,
-        scaleY: 1 + Math.sin(phase) * 0.09,
+        dy: Math.round(-Math.abs(Math.sin(phase)) * 7),
+        // Keep the stretch subtle: a strong vertical scale straightens the
+        // right-arm contour and reads as a clipped edge.
+        scaleX: 1 - Math.sin(phase) * 0.02,
+        scaleY: 1 + Math.sin(phase) * 0.03,
       }
     case 'failed': // slow side-to-side wiggle
       return { dx: 0, dy: 0, angle: Math.sin(phase) * 3.5 }

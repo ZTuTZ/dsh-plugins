@@ -9,11 +9,11 @@ import css from './pet.module.css'
 /** Per-animation frame pacing (ms) — slower for pensive poses, snappier for
  *  jumps/petting so every pose reads naturally instead of a uniform stutter. */
 const FRAME_DURATION_MS: Record<PetAnimation, number> = {
-  idle: 110,
-  waiting: 130,
-  thinking: 150,
-  jumping: 80,
-  pet: 110,
+  idle: 55,
+  waiting: 65,
+  thinking: 75,
+  jumping: 40,
+  pet: 55,
 }
 
 export interface PetViewProps {
