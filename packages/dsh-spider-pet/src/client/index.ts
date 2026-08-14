@@ -61,6 +61,8 @@ export function apply(ctx: ClientContext): void {
     id: 'spider-app',
     order: 30,
     label: () => '蜘蛛侠',
+    locale: NS,
+    inject: () => ({}),
   }, SpiderAppTab))
 
   ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
@@ -99,9 +101,7 @@ export function apply(ctx: ClientContext): void {
       if (disposer !== undefined) return
       try {
         unmountRestore()
-        disposer = mountPet(controller, SPRITE_META, FRAME_TABLE, SPRITE_SHEET_URL, () => {
-          controller.setAppEnabled(false)
-        })
+        disposer = mountPet(controller, SPRITE_META, FRAME_TABLE, SPRITE_SHEET_URL)
         const poll = (): void => {
           fetch(ACTIVITY_STATE_URL)
             .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status ${res.status}`))))

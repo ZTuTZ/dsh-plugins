@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
-import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { APP_STORAGE_KEY, APP_TOGGLE_EVENT, readAppEnabled } from '../core/controller.ts'
+import type { PetLocaleKey } from './locales.ts'
 
 /** Props the official Plugins settings section binds for its tabs. */
-export type SpiderAppTabProps = PropsRuntime<'settings.plugins.tab'>
+export interface SpiderAppTabInjected {
+  /** The tab needs no injected face; the switch reads shared localStorage. */
+}
+
+export type SpiderAppTabProps =
+  PropsRuntime<'settings.plugins.tab'>
+  & PropsLocale<PetLocaleKey>
+  & InjectFace<SpiderAppTabInjected>
 
 /**
  * One tab inside the official Plugins settings page: the spider-app master
