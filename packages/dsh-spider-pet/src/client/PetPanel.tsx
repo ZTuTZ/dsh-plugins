@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { PetController } from '../core/controller.ts'
 import css from './pet.module.css'
 
@@ -8,7 +7,6 @@ export interface PetPanelProps {
 }
 
 export function PetPanel(props: PetPanelProps): JSX.Element {
-  const [name, setName] = useState('')
   const snapshot = props.controller.getSnapshot()
   const { persist } = snapshot
 
@@ -17,20 +15,6 @@ export function PetPanel(props: PetPanelProps): JSX.Element {
       <div className={css.panelHeader}>
         <b>{persist.display.name}</b>
         <button type="button" onClick={props.onClose}>x</button>
-      </div>
-      <div className={css.panelRow}>
-        <input
-          value={name}
-          placeholder="新名字"
-          maxLength={20}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button
-          type="button"
-          onClick={() => { props.controller.rename(name); setName(''); props.onClose() }}
-        >
-          改名
-        </button>
       </div>
       <div className={css.panelRow}>
         <button type="button" onClick={() => { props.controller.setDisplay({ visible: false }); props.onClose() }}>隐藏</button>

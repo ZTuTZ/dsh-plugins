@@ -42,14 +42,6 @@ describe('PetController', () => {
     expect(controller.getSnapshot().animation).toBe('idle')
   })
 
-  it('renames within length bounds', () => {
-    const controller = new PetController({ storage: memoryStorage(), now: () => 0 })
-    expect(controller.rename('小蛛').ok).toBe(true)
-    expect(controller.getSnapshot().persist.display.name).toBe('小蛛')
-    expect(controller.rename('').ok).toBe(false)
-    expect(controller.rename('x'.repeat(21)).ok).toBe(false)
-  })
-
   it('maps activity to animation', () => {
     const controller = new PetController({ storage: memoryStorage(), now: () => 0 })
     expect(controller.getSnapshot().animation).toBe('idle')

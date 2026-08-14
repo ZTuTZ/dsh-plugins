@@ -16,8 +16,6 @@ export interface PetPersist {
 
 export const PET_STORAGE_KEY = 'dsh.spiderPet.v1'
 
-const PET_NAME_MAX = 20
-
 export const defaultPersist: PetPersist = {
   display: { visible: true, size: 160, right: 24, bottom: 20, name: '蛛蛛侠' },
 }
@@ -113,14 +111,6 @@ export class PetController {
   setDisplay(patch: Partial<PetPersist['display']>): void {
     this.persist = { ...this.persist, display: { ...this.persist.display, ...patch } }
     this.persistAndNotify()
-  }
-
-  rename(name: string): { ok: boolean; error?: string } {
-    const trimmed = name.trim()
-    if (trimmed === '') return { ok: false, error: '名字不能为空' }
-    if (trimmed.length > PET_NAME_MAX) return { ok: false, error: '名字太长' }
-    this.setDisplay({ name: trimmed })
-    return { ok: true }
   }
 
   private persistAndNotify(): void {

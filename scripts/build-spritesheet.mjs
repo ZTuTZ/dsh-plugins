@@ -73,11 +73,11 @@ function frameTransform(pose, index, count) {
     case 'waiting': // light foot-tap bounce
       return { dx: 0, dy: Math.round(Math.sin(phase) * 4), scaleX: 1, scaleY: 1 + Math.sin(phase) * 0.015 }
     case 'thinking': // slow head sway
-      return { dx: 0, dy: 0, angle: Math.sin(phase) * 2.2 }
+      return { dx: 0, dy: 0, angle: Math.sin(phase) * 1.0 }
     case 'jumping': // jump arc: squash at takeoff/land, rise mid-air
       return {
         dx: 0,
-        dy: Math.round(-Math.sin(t * Math.PI) * 42),
+        dy: Math.round(-Math.sin(t * Math.PI) * 24),
         scaleX: 1 + Math.sin(t * Math.PI) * 0.05,
         scaleY: 1 - Math.sin(t * Math.PI) * 0.06,
       }

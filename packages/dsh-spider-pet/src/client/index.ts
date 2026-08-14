@@ -78,7 +78,11 @@ export function apply(ctx: ClientContext): void {
             .then((state: { phase?: string; phrase?: string; line?: string }) => {
               const activity = state.phase === undefined ? undefined : PHASE_MAP[state.phase]
               if (activity === undefined) return
-              controller.setActivity(activity, state.phrase ?? state.line ?? undefined)
+              let bubble = state.phrase ?? state.line ?? undefined
+              // Working without a tool call has no host phrase; show a
+              // default status bubble so the pet always says what it is doing.
+              if (activity === 'thinking' && bubble === undefined) bubble = '正在思考…'
+              controller.setActivity(activity, bubble)
             })
             .catch(() => {
               // Host API unavailable (plugin toggled off / server restarted):
