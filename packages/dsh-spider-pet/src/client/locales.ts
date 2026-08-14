@@ -3,6 +3,8 @@ export const zh = {
   'settings.title': '蜘蛛侠宠物',
   'settings.visibility': '隐藏',
   'settings.name': '名字',
+  'pet.summon': '召唤{name}',
+  'pet.feedback': '嗷呜～',
 } satisfies Record<string, string>
 
 /** The spider-pet key union. */
@@ -13,4 +15,6 @@ export const en = {
   'settings.title': 'Spider Pet',
   'settings.visibility': 'Hide',
   'settings.name': 'Name',
+  'pet.summon': 'Summon {name}',
+  'pet.feedback': 'Meep!',
 } satisfies Record<string, string>

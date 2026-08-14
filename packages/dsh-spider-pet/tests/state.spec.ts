@@ -7,7 +7,6 @@ describe('animationFor', () => {
     expect(animationFor('waiting', false)).toBe('waiting')
     expect(animationFor('thinking', false)).toBe('thinking')
     expect(animationFor('done', false)).toBe('jumping')
-    expect(animationFor('failed', false)).toBe('failed')
   })
 
   it('pet animation takes priority over idle', () => {

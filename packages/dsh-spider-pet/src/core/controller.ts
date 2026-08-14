@@ -1,16 +1,10 @@
 import {
-  applyInteraction,
-  type AffinityState,
-  type PetInteraction,
-} from './ledger.ts'
-import {
   animationFor,
   type PetActivity,
   type PetAnimation,
 } from './state.ts'
 
 export interface PetPersist {
-  affinity: AffinityState
   display: {
     visible: boolean
     size: number
@@ -25,7 +19,6 @@ export const PET_STORAGE_KEY = 'dsh.spiderPet.v1'
 const PET_NAME_MAX = 20
 
 export const defaultPersist: PetPersist = {
-  affinity: { points: 0, pets: 0, feeds: 0, lastPetAt: Number.NEGATIVE_INFINITY, lastFeedAt: Number.NEGATIVE_INFINITY },
   display: { visible: true, size: 160, right: 24, bottom: 20, name: '蛛蛛侠' },
 }
 
@@ -38,7 +31,6 @@ export function loadPersist(
     if (!raw) return fallback
     const parsed = JSON.parse(raw) as Partial<PetPersist>
     return {
-      affinity: { ...fallback.affinity, ...parsed.affinity },
       display: { ...fallback.display, ...parsed.display },
     }
   } catch {
@@ -65,9 +57,13 @@ export interface PetControllerDeps {
 export class PetController {
   private persist: PetPersist
   private activity: PetActivity = 'idle'
-  private petTriggered = false
+  private petTriggeredAt = Number.NEGATIVE_INFINITY
+  /** Status phrase/line from the host activity tracker, shown as a bubble. */
+  private bubble: string | undefined
   private listeners = new Set<() => void>()
   private readonly now: () => number
+  /** How long the pet animation runs after a pet interaction (ms). */
+  private readonly petWindowMs = 1600
 
   constructor(private readonly deps: PetControllerDeps) {
     this.now = deps.now ?? (() => Date.now())
@@ -77,12 +73,17 @@ export class PetController {
   getSnapshot(): {
     persist: PetPersist
     activity: PetActivity
-    petTriggered: boolean
     animation: PetAnimation
+    bubble: string | undefined
   } {
-    const animation = animationFor(this.activity, this.petTriggered)
-    this.petTriggered = false
-    return { persist: this.persist, activity: this.activity, petTriggered: animation === 'pet', animation }
+    const petTriggered = this.now() - this.petTriggeredAt < this.petWindowMs
+    const animation = animationFor(this.activity, petTriggered)
+    return {
+      persist: this.persist,
+      activity: this.activity,
+      animation,
+      bubble: this.bubble,
+    }
   }
 
   subscribe(fn: () => void): () => void {
@@ -90,19 +91,23 @@ export class PetController {
     return () => { this.listeners.delete(fn) }
   }
 
-  setActivity(activity: PetActivity): void {
-    if (this.activity === activity) return
+  setActivity(activity: PetActivity, bubble?: string): void {
     this.activity = activity
+    this.bubble = bubble
     this.notify()
   }
 
-  interact(kind: PetInteraction): { granted: boolean; reason?: string } {
-    const result = applyInteraction(this.persist.affinity, kind, this.now())
-    if (!result.granted) return result
-    this.persist = { ...this.persist, affinity: result.state }
-    if (kind === 'pet') this.petTriggered = true
-    this.persistAndNotify()
-    return { granted: true }
+  /** Clear the status bubble (after its CSS animation). */
+  clearBubble(): void {
+    if (this.bubble === undefined) return
+    this.bubble = undefined
+    this.notify()
+  }
+
+  /** Trigger the pet animation (no affinity bookkeeping). */
+  interact(): void {
+    this.petTriggeredAt = this.now()
+    this.notify()
   }
 
   setDisplay(patch: Partial<PetPersist['display']>): void {

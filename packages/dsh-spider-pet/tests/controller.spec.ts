@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { PetController, loadPersist, type PetPersist } from '../src/core/controller.ts'
 
 const fallback: PetPersist = {
-  affinity: { points: 0, pets: 0, feeds: 0, lastPetAt: Number.NEGATIVE_INFINITY, lastFeedAt: Number.NEGATIVE_INFINITY },
   display: { visible: true, size: 160, right: 24, bottom: 20, name: '蛛蛛侠' },
 }
 
@@ -25,21 +24,22 @@ describe('loadPersist', () => {
   })
 
   it('parses stored JSON', () => {
-    const s = memoryStorage(JSON.stringify({ ...fallback, display: { ...fallback.display, name: '小蛛' } }))
+    const s = memoryStorage(JSON.stringify({ display: { ...fallback.display, name: '小蛛' } }))
     expect(loadPersist(s, fallback).display.name).toBe('小蛛')
   })
 })
 
 describe('PetController', () => {
-  it('persists and notifies on interaction', () => {
+  it('triggers the pet animation for a window and notifies', () => {
     let now = 0
     const controller = new PetController({ storage: memoryStorage(), now: () => now })
     const events: string[] = []
     controller.subscribe(() => events.push('change'))
-    const r = controller.interact('pet')
-    expect(r.granted).toBe(true)
-    expect(controller.getSnapshot().persist.affinity.points).toBe(1)
+    controller.interact()
+    expect(controller.getSnapshot().animation).toBe('pet')
     expect(events).toContain('change')
+    now = 2000
+    expect(controller.getSnapshot().animation).toBe('idle')
   })
 
   it('renames within length bounds', () => {
@@ -50,13 +50,23 @@ describe('PetController', () => {
     expect(controller.rename('x'.repeat(21)).ok).toBe(false)
   })
 
-  it('maps activity to animation and clears pet trigger after snapshot', () => {
+  it('maps activity to animation', () => {
     const controller = new PetController({ storage: memoryStorage(), now: () => 0 })
-    controller.interact('pet')
-    controller.setActivity('idle')
-    expect(controller.getSnapshot().animation).toBe('pet')
     expect(controller.getSnapshot().animation).toBe('idle')
+    controller.setActivity('waiting')
+    expect(controller.getSnapshot().animation).toBe('waiting')
+    controller.setActivity('thinking')
+    expect(controller.getSnapshot().animation).toBe('thinking')
     controller.setActivity('done')
     expect(controller.getSnapshot().animation).toBe('jumping')
+  })
+
+  it('carries and clears a status bubble', () => {
+    const controller = new PetController({ storage: memoryStorage(), now: () => 0 })
+    expect(controller.getSnapshot().bubble).toBeUndefined()
+    controller.setActivity('thinking', '正在调用工具…')
+    expect(controller.getSnapshot().bubble).toBe('正在调用工具…')
+    controller.clearBubble()
+    expect(controller.getSnapshot().bubble).toBeUndefined()
   })
 })

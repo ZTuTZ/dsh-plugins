@@ -14,8 +14,13 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
 
-const POSES = ['idle', 'waiting', 'thinking', 'jumping', 'pet', 'failed']
-const FRAMES = [8, 6, 6, 6, 5, 5]
+const POSES = ['idle', 'waiting', 'thinking', 'jumping', 'pet']
+const FRAMES = [8, 6, 6, 6, 5]
+// Poses whose JPEG holds TWO sprites side by side (a seedream quirk) and
+// need splitting. `pet` (and the removed `failed`) is a SINGLE wide sprite
+// (near-shot crouch with an outstretched arm) — splitting it would cut the
+// right arm off at the shoulder.
+const SPLIT_POSES = new Set(['idle', 'waiting', 'thinking', 'jumping'])
 const CELL = 256
 const COLS = 8
 const ROOT = process.cwd()
@@ -23,7 +28,17 @@ const SRC_DIR = join(ROOT, '素材/spidey/pet-poses')
 const OUT_DIR = join(ROOT, '素材/spidey')
 const KEY_SIZE = 1024
 
-/** Chroma-key the green background (key approx #3fd771) with despill. */
+/**
+ * Chroma-key the green background (key approx #3fd771) with despill.
+ *
+ * Only pixels whose GREEN channel is the dominant channel AND are strongly
+ * green are treated as backdrop. Red/blue suit pixels and white eye/webbing
+ * pixels (where green is never the max channel) are kept fully opaque, so a
+ * suit edge sitting in front of the green screen — which picks up a mild
+ * green spill — survives instead of being faded out and mistaken for
+ * background. (The old threshold deleted those edges, which is why the pet
+ * pose's outstretched right arm looked cut off at the shoulder.)
+ */
 function keyGreen(input, w, h) {
   const out = Buffer.alloc(w * h * 4)
   for (let i = 0; i < w * h; i++) {
@@ -32,9 +47,10 @@ function keyGreen(input, w, h) {
     let r = input[o3]
     let g = input[o3 + 1]
     const b = input[o3 + 2]
+    const max = Math.max(r, g, b)
     const greenness = g - Math.max(r, b)
     let alpha = 255
-    if (greenness > 40) {
+    if (greenness > 40 && max === g) {
       alpha = 0
     } else if (greenness > 10) {
       alpha = Math.round(255 * (1 - (greenness - 10) / 30))
@@ -94,9 +110,6 @@ async function keyedPose(name) {
 async function spriteCells(name, count) {
   const png = await keyedPose(name)
   const img = sharp(png).ensureAlpha()
-  // Each pose JPEG contains TWO sprites side by side (a seedream quirk).
-  // Split it: find the vertical gap in the opaque column profile and keep the
-  // left sprite so every cell holds exactly one character.
   const raw = await img.raw().toBuffer({ resolveWithObject: true })
   const { width: W, height: H, channels: CH } = raw.info
   const profile = new Int32Array(W)
@@ -119,24 +132,30 @@ async function spriteCells(name, count) {
     }
   }
   if (runStart >= 0) runs.push([runStart, W - 1])
-  // the widest run contains both sprites; split it at the deepest valley
+  // The widest opaque run is the sprite. For two-sprite poses, split it at
+  // the deepest valley and keep the left sprite; for single wide poses the
+  // whole run is one character, so no split happens.
   let run = runs.sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0]
   if (!run) run = [0, W - 1]
   const [start, end] = run
-  let gap = Math.floor((start + end) / 2)
-  let best = Infinity
-  for (let x = start + Math.floor((end - start) * 0.25); x <= end - Math.floor((end - start) * 0.25); x++) {
-    if (profile[x] < best) {
-      best = profile[x]
-      gap = x
+  let cut = end
+  if (SPLIT_POSES.has(name)) {
+    let gap = Math.floor((start + end) / 2)
+    let best = Infinity
+    for (let x = start + Math.floor((end - start) * 0.25); x <= end - Math.floor((end - start) * 0.25); x++) {
+      if (profile[x] < best) {
+        best = profile[x]
+        gap = x
+      }
     }
+    cut = Math.max(start + 1, Math.min(end - 1, gap))
   }
-  gap = Math.max(start + 1, Math.min(end - 1, gap))
-  console.log(`  ${name}: W=${W} H=${H} run=${start}..${end} gap=${gap} width=${Math.max(2, gap - start + 1)}`)
+  const width = Math.max(2, cut - start + 1)
+  console.log(`  ${name}: W=${W} H=${H} run=${start}..${end} cut=${cut} width=${width}`)
   // sharp 0.35 misbehaves when extract() is chained straight into trim();
   // run them as separate pipelines.
   const extracted = await sharp(png)
-    .extract({ left: start, top: 0, width: Math.max(2, gap - start + 1), height: H })
+    .extract({ left: start, top: 0, width, height: H })
     .png()
     .toBuffer()
   const info = await sharp(extracted)
@@ -144,7 +163,7 @@ async function spriteCells(name, count) {
     .raw()
     .toBuffer({ resolveWithObject: true })
   const trimmed = sharp(info.data, { raw: { width: info.info.width, height: info.info.height, channels: info.info.channels } })
-  console.log(`  ${name}: run ${start}..${end}, left sprite ${start}..${gap}`)
+  console.log(`  ${name}: run ${start}..${end}, sprite ${start}..${cut}`)
   // normalize sprite to a comfortable height inside the cell
   const BASE_H = 196
   const norm = await trimmed.resize({ height: BASE_H, withoutEnlargement: false }).png().toBuffer()

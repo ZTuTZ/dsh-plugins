@@ -45,7 +45,7 @@ export function mountPet(
         meta={meta}
         table={table}
         sheetUrl={sheetUrl}
-        onInteract={() => { controller.interact('pet') }}
+        onInteract={() => { controller.interact() }}
         onPanel={togglePanel}
         panelOpen={panelOpen}
         onDrag={onDrag}

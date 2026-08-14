@@ -49,6 +49,27 @@ export function PetView(props: PetViewProps): JSX.Element {
     bubbleTimer.current = setTimeout(() => setShowBubble(false), 1200)
   }
 
+  // Status bubble (host activity phrase) takes priority over the pet-name
+  // feedback bubble shown right after a pet interaction.
+  const bubbleText = snapshot.bubble ?? (showBubble ? persist.display.name : undefined)
+
+  // Hidden: render a summon button at the pet's last position so the pet can
+  // always be brought back (the dock row of the reference plugin does the
+  // same; here the pet is an independent floating layer).
+  if (!persist.display.visible) {
+    return (
+      <button
+        className={css.summon}
+        data-dsh-spider-pet-summon=""
+        style={{ right: persist.display.right, bottom: persist.display.bottom }}
+        onClick={() => { props.controller.setDisplay({ visible: true }) }}
+        type="button"
+      >
+        召唤{persist.display.name}
+      </button>
+    )
+  }
+
   return (
     <div
       className={css.petView}
@@ -60,7 +81,9 @@ export function PetView(props: PetViewProps): JSX.Element {
       role="button"
       aria-label={persist.display.name}
     >
-      <span className={css.bubble} data-show={showBubble}>{persist.display.name}</span>
+      {bubbleText !== undefined ? (
+        <span className={css.bubble} data-show="true">{bubbleText}</span>
+      ) : null}
       <div
         className={css.petSprite}
         style={{

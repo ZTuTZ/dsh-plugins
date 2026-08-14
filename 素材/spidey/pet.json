@@ -4,15 +4,13 @@
     "waiting": 1,
     "thinking": 2,
     "jumping": 3,
-    "pet": 4,
-    "failed": 5
+    "pet": 4
   },
   "frames": [
     8,
     6,
     6,
     6,
-    5,
     5
   ],
   "cell": {
