@@ -16,9 +16,7 @@ interface Blob {
   r: number
 }
 
-const IDLE_MS = 1500
-const SAMPLE_TTL_MS = 1600
-const MAX_SAMPLES = 12
+const MAX_SAMPLES = 26
 
 /**
  * Fluid identity reveal: the Spider-Man suit figure floats in the middle of the
@@ -37,13 +35,13 @@ export function mountReveal(images: RevealImages): () => void {
   const main: Blob = { x: -9999, y: -9999, r: 0 }
   const trail: Blob = { x: -9999, y: -9999, r: 0 }
   const soft: Blob = { x: -9999, y: -9999, r: 0 }
-  const wake: Array<{ x: number; y: number; t: number }> = []
+  const wake: Array<{ x: number; y: number }> = []
+  let wakeFade = 0
   const parallax = { x: 0, y: 0, tx: 0, ty: 0 }
 
   let rect = { left: 0, top: 0, width: 0, height: 0 }
   let figureRect = { left: 0, top: 0, width: 0, height: 0 }
   let peterRect = { left: 0, top: 0, width: 0, height: 0 }
-  let lastMove = 0
   let raf = 0
   let reducedMotion = false
 
@@ -86,14 +84,13 @@ export function mountReveal(images: RevealImages): () => void {
     target.active = true
     target.x = event.clientX - peterRect.left
     target.y = event.clientY - peterRect.top
-    wake.push({ x: target.x, y: target.y, t: performance.now() })
+    wake.push({ x: target.x, y: target.y })
     if (wake.length > MAX_SAMPLES) wake.splice(0, wake.length - MAX_SAMPLES)
     parallax.tx = (event.clientX - (rect.left + rect.width / 2)) / Math.max(1, rect.width)
     parallax.ty = (event.clientY - (rect.top + rect.height / 2)) / Math.max(1, rect.height)
-    lastMove = performance.now()
   }
 
-  const applyMask = (now: number, radiusMain: number): void => {
+  const applyMask = (radiusMain: number): void => {
     if (peter === undefined) return
     const layers: Array<[Blob, number]> = [
       [main, 1.0],
@@ -103,11 +100,9 @@ export function mountReveal(images: RevealImages): () => void {
     const gradients = layers.map(([blob, strength]) =>
       `radial-gradient(circle ${Math.max(0, blob.r * strength)}px at ${blob.x}px ${blob.y}px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 52%, rgba(0,0,0,0) 76%)`,
     ).join(', ')
-    const wakeGradients = wake.map((s) => {
-      const age = Math.min(1, (now - s.t) / SAMPLE_TTL_MS)
-      const r = Math.max(0, radiusMain * (1 - age * 0.62))
-      return `radial-gradient(circle ${r}px at ${s.x}px ${s.y}px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 52%, rgba(0,0,0,0) 76%)`
-    })
+    const wakeGradients = wake.map((s) =>
+      `radial-gradient(circle ${Math.max(0, radiusMain * 0.9 * wakeFade)}px at ${s.x}px ${s.y}px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 52%, rgba(0,0,0,0) 76%)`,
+    )
     const all = wakeGradients.length > 0
       ? wakeGradients.join(', ') + ', ' + gradients
       : gradients
@@ -121,9 +116,6 @@ export function mountReveal(images: RevealImages): () => void {
     raf = requestAnimationFrame(tick)
     if (peter === undefined || suit === undefined || reducedMotion) return
     if (peterRect.width <= 0) readRect()
-
-    if (target.active && now - lastMove > IDLE_MS) target.active = false
-    while (wake.length > 0 && now - wake[0].t > SAMPLE_TTL_MS) wake.shift()
 
     const speedMain = 0.16
     const speedTrail = 0.10
@@ -144,6 +136,10 @@ export function mountReveal(images: RevealImages): () => void {
     soft.y = lerp(soft.y, ty, speedSoft)
     soft.r = lerp(soft.r, tr, speedSoft)
 
+    const wantFade = target.active ? 1 : 0
+    wakeFade = lerp(wakeFade, wantFade, target.active ? 0.14 : 0.06)
+    if (!target.active && wakeFade < 0.03 && wake.length > 0) wake.length = 0
+
     parallax.x = lerp(parallax.x, parallax.tx, 0.08)
     parallax.y = lerp(parallax.y, parallax.ty, 0.08)
     const px = Math.round(parallax.x * -12)
@@ -151,7 +147,7 @@ export function mountReveal(images: RevealImages): () => void {
     suit.style.transform = `translate(-50%, -50%) translate3d(${px}px, ${py}px, 0) scale(1.04)`
     peter.style.transform = `translate(-50%, -50%) translate3d(${Math.round(px * 0.55)}px, ${Math.round(py * 0.55)}px, 0)`
 
-    applyMask(now, radiusMain)
+    applyMask(radiusMain)
   }
 
   const ensure = (): void => {

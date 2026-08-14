@@ -1,6 +1,9 @@
-"""Chroma-key the generated red-background hero renders into transparent
-cutouts, normalizing both figures to the same canvas framing so the suit/peter
-reveal doesn't jump.
+"""Build the transparent skin cutouts.
+
+- Suit: taken as-is from the site's transparent classic suit render (suit-06),
+  normalized onto a 900x1200 canvas (figure height 92%, top margin 4%).
+- Peter: chroma-key the generated red-background render and normalize the
+  figure onto the exact same canvas framing so the reveal doesn't jump.
 
 Usage: python3 scripts/build-skin-cutouts.py
 """
@@ -9,9 +12,14 @@ import math
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, '素材', 'spidey', 'skin-hero')
+HERO = os.path.join(ROOT, '素材', 'spidey', 'skin-hero')
 OUT = os.path.join(ROOT, '素材', 'spidey', 'skin-cutouts')
+SITE_SUIT = '/Users/aadmin/tool/蜘蛛侠网页_图片保留_视频可替换/public/suits-normalized/suit-06.png'
 os.makedirs(OUT, exist_ok=True)
+
+CANVAS_W, CANVAS_H = 900, 1200
+FIG_H = int(CANVAS_H * 0.92)
+FIG_TOP = int(CANVAS_H * 0.04)
 
 
 def bg_model(im):
@@ -62,53 +70,49 @@ def bbox_of(mask, threshold=90):
     return min(xs), min(ys), max(xs), max(ys)
 
 
-imgs = {}
-for name in ['suit', 'peter']:
-    im = Image.open(os.path.join(SRC, f'{name}.png')).convert('RGB')
-    rows = bg_model(im)
-    imgs[name] = (im, fg_mask(im, rows))
+def save_cutout(rgba, name):
+    base = os.path.join(OUT, f'{name}-cutout')
+    rgba.save(base + '.png')
+    rgba.save(base + '.webp', quality=72, method=6)
+    print('ok', name, os.path.getsize(base + '.webp'), 'bytes webp')
 
-(_, m1), (_, m2) = imgs['suit'], imgs['peter']
-mask = Image.new('L', m1.size)
-p1, p2, pm = m1.load(), m2.load(), mask.load()
-for y in range(m1.size[1]):
-    for x in range(m1.size[0]):
-        pm[x, y] = max(p1[x, y], p2[x, y])
 
-# close holes, open specks, feather edges
+# --- suit: normalize the site's transparent render ---
+suit_src = Image.open(SITE_SUIT).convert('RGBA')
+bbox = suit_src.getchannel('A').getbbox()
+fig = suit_src.crop(bbox)
+scale = FIG_H / (bbox[3] - bbox[1])
+fw = int((bbox[2] - bbox[0]) * scale)
+fig = fig.resize((fw, FIG_H), Image.LANCZOS)
+suit_canvas = Image.new('RGBA', (CANVAS_W, CANVAS_H), (0, 0, 0, 0))
+suit_canvas.paste(fig, ((CANVAS_W - fw) // 2, FIG_TOP), fig)
+save_cutout(suit_canvas, 'suit')
+
+# --- peter: key the red background and align to the suit framing ---
+peter_src = Image.open(os.path.join(HERO, 'peter.png')).convert('RGB')
+rows = bg_model(peter_src)
+mask = fg_mask(peter_src, rows)
 mask = mask.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.MinFilter(5))
 mask = mask.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.MaxFilter(3))
 mask = mask.filter(ImageFilter.GaussianBlur(1.6))
 
 bx0, by0, bx1, by1 = bbox_of(mask)
-print('union bbox:', bx0, by0, bx1, by1)
+print('peter bbox:', bx0, by0, bx1, by1)
+px_src = peter_src.load()
+pm = mask.load()
+peter_canvas = Image.new('RGBA', (CANVAS_W, CANVAS_H), (0, 0, 0, 0))
+op = peter_canvas.load()
 
-# Normalized 3:4 canvas: figure height 88% of canvas height, vertical center at
-# 48%, horizontal center at 50%.
-CANVAS_W, CANVAS_H = 900, 1200
-scale = (CANVAS_H * 0.88) / (by1 - by0)
-crop_w = CANVAS_W / scale
-crop_h = CANVAS_H / scale
-cx = (bx0 + bx1) / 2
-cy = (by0 + by1) / 2
-crop_x = min(max(0, cx - crop_w / 2), 2048 - crop_w)
-crop_y = min(max(0, cy - crop_h * 0.48), 2048 - crop_h)
-print('crop:', round(crop_x), round(crop_y), round(crop_w), round(crop_h))
+fig_h = by1 - by0
+scale_p = FIG_H / fig_h
+fig_w = int((bx1 - bx0) * scale_p)
+ox = (CANVAS_W - fig_w) // 2
+for y in range(FIG_H):
+    sy = min(2047, max(0, int(by0 + y / scale_p)))
+    for x in range(fig_w):
+        sx = min(2047, max(0, int(bx0 + x / scale_p)))
+        r, g, b = px_src[sx, sy]
+        op[ox + x, FIG_TOP + y] = (r, g, b, pm[sx, sy])
 
-for name, (im, _) in imgs.items():
-    px = im.load()
-    pm = mask.load()
-    out = Image.new('RGBA', (CANVAS_W, CANVAS_H))
-    op = out.load()
-    for y in range(CANVAS_H):
-        sy = min(2047, max(0, int(crop_y + (y / CANVAS_H) * crop_h)))
-        for x in range(CANVAS_W):
-            sx = min(2047, max(0, int(crop_x + (x / CANVAS_W) * crop_w)))
-            r, g, b = px[sx, sy]
-            op[x, y] = (r, g, b, pm[sx, sy])
-    base = f'{name}-cutout'
-    out.save(os.path.join(OUT, base + '.png'))
-    out.save(os.path.join(OUT, base + '.webp'), quality=72, method=6)
-    print('ok', base, os.path.getsize(os.path.join(OUT, base + '.webp')), 'bytes webp')
-
+save_cutout(peter_canvas, 'peter')
 print('cutouts built')
