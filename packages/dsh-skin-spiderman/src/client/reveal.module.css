@@ -1,0 +1,21 @@
+.reveal {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 1;
+  width: 180px;
+  height: 240px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(217, 43, 58, 0.4);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.suit { z-index: 1; }
+.peter { z-index: 2; }
