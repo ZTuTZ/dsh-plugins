@@ -109,8 +109,8 @@ export function mountReveal(images: RevealImages): () => void {
     const radiusTrail = radiusMain * 0.72
     const radiusSoft = radiusMain * 0.5
 
-    const tx = target.active ? target.x : rect.left + rect.width + 120
-    const ty = target.active ? target.y : rect.top + rect.height + 160
+    const tx = target.active ? target.x : rect.width + 120
+    const ty = target.active ? target.y : rect.height + 160
     const tr = target.active ? radiusMain : 0
 
     main.x = lerp(main.x, tx, speedMain)
@@ -160,8 +160,10 @@ export function mountReveal(images: RevealImages): () => void {
     peter.src = images.peter
     peter.alt = ''
     peter.draggable = false
-    peter.style.maskImage = 'none'
-    peter.style.webkitMaskImage = 'none'
+    // Start with Peter fully masked out so the suit is the default state.
+    const hiddenMask = 'radial-gradient(circle 0px at 0px 0px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 52%, rgba(0,0,0,0) 76%)'
+    peter.style.maskImage = hiddenMask
+    peter.style.webkitMaskImage = hiddenMask
 
     wrap.append(glow, suit, peter)
     center.prepend(wrap)
@@ -185,8 +187,8 @@ export function mountReveal(images: RevealImages): () => void {
     window.addEventListener('pointermove', onMove, { passive: true })
     window.addEventListener('resize', readRect)
     if (!reducedMotion) {
-      main.x = rect.left + rect.width + 120
-      main.y = rect.top + rect.height + 160
+      main.x = rect.width + 120
+      main.y = rect.height + 160
       trail.x = main.x
       trail.y = main.y
       soft.x = main.x
