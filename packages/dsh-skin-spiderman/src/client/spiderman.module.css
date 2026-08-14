@@ -317,11 +317,20 @@ body[data-dsh-spiderman][data-ds-dark-theme] {
   --dsw-specific-tip: rgb(28, 22, 34);
 }
 
-/* ===== Surface: let the background art show through ===== */
-body[data-dsh-spiderman] [id='root'] {
-  background: rgba(16, 11, 22, 0.62);
-  backdrop-filter: blur(10px) saturate(1.1);
-  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+/* ===== Surface: conversation pane shows the background art; sidebar stays solid ===== */
+body[data-dsh-spiderman] [data-pane='conversation'] {
+  background: rgba(18, 12, 24, 0.52);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+body[data-dsh-spiderman] [data-pane='conversation'] [data-dsh-spiderman-reveal] {
+  z-index: 0;
+}
+
+body[data-dsh-spiderman] [data-pane='conversation'] > * {
+  position: relative;
+  z-index: 1;
 }
 
 body[data-dsh-spiderman] .chrome {

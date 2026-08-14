@@ -17,7 +17,7 @@ export function apply(ctx: Context): void {
 
     const disposers: Array<() => void> = []
     disposers.push(mountFluid(document.body))
-    disposers.push(mountReveal(document.body, { peter: PETER_URL, suit: SUIT_URL }))
+    disposers.push(mountReveal({ peter: PETER_URL, suit: SUIT_URL }))
 
     return () => {
       chrome.remove()
