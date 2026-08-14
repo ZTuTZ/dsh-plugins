@@ -39,6 +39,8 @@ export function PetView(props: PetViewProps): JSX.Element | null {
   const frameRef = useRef(0)
   const [showBubble, setShowBubble] = useState(false)
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const [sheetImage, setSheetImage] = useState<HTMLImageElement | null>(null)
 
   useEffect(() => {
     // Restart the track from its first frame whenever the animation changes,
@@ -64,13 +66,44 @@ export function PetView(props: PetViewProps): JSX.Element | null {
     return () => cancelAnimationFrame(raf)
   }, [animation, props.table])
 
+  // Decode the sprite sheet once, then blit the current cell into a canvas on
+  // every frame. Animating a giant CSS background (4096x1024 WebP) via
+  // background-position is composited by the GPU and shows clipping/tearing
+  // artifacts on some devices even though the sheet itself has clean margins.
+  useEffect(() => {
+    const image = new Image()
+    image.onload = () => setSheetImage(image)
+    image.src = props.sheetUrl
+    return () => { image.onload = null }
+  }, [props.sheetUrl])
+
   const persist: PetPersist = snapshot.persist
   const row = props.table.rows[animation] ?? props.table.rows.idle ?? 0
   const index = frame % (props.table.frames[row] ?? 1)
   const pos = framePosition(props.meta, row, index)
-  // The pet element may be resized; scale the sheet so one cell exactly fills
-  // the element (whole sprite visible, no cropping by the window).
-  const scale = persist.display.size / props.meta.cellWidth
+  const size = persist.display.size
+
+  // Redraw whenever the frame advances, the decoded sheet arrives, or the
+  // pet size changes. The canvas is sized in device pixels so the sprite
+  // stays crisp on Retina displays; CSS keeps it at `size` CSS pixels.
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !sheetImage) return
+    const dpr = Math.max(1, window.devicePixelRatio || 1)
+    const pixelWidth = Math.max(1, Math.round(size * dpr))
+    if (canvas.width !== pixelWidth) canvas.width = pixelWidth
+    if (canvas.height !== pixelWidth) canvas.height = pixelWidth
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, size, size)
+    ctx.imageSmoothingEnabled = true
+    ctx.drawImage(
+      sheetImage,
+      pos.x, pos.y, props.meta.cellWidth, props.meta.cellHeight,
+      0, 0, size, size,
+    )
+  }, [frame, sheetImage, props.meta, props.table, size, pos.x, pos.y])
 
   const handleClick = (): void => {
     props.onInteract()
@@ -112,15 +145,11 @@ export function PetView(props: PetViewProps): JSX.Element | null {
       {bubbleText !== undefined ? (
         <span className={css.bubble} data-show="true">{bubbleText}</span>
       ) : null}
-      <div
+      <canvas
         className={css.petSprite}
         onClick={handleClick}
         onPointerDown={props.onDrag}
-        style={{
-          backgroundImage: `url(${props.sheetUrl})`,
-          backgroundSize: `${props.meta.framesPerRow * props.meta.cellWidth * scale}px ${Object.keys(props.table.rows).length * props.meta.cellHeight * scale}px`,
-          backgroundPosition: `-${Math.round(pos.x * scale)}px -${Math.round(pos.y * scale)}px`,
-        }}
+        ref={canvasRef}
       />
       {props.panelOpen ? <PetPanel controller={props.controller} onClose={props.onPanel} /> : null}
     </div>
