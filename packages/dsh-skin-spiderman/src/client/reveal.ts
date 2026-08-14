@@ -52,13 +52,16 @@ export function mountReveal(images: RevealImages): () => void {
     wrap.append(suit, peter)
     center.prepend(wrap)
 
-    // Raise every sibling (conversation view root, scroll body, composer seat)
-    // above the background layer so chat content stays readable.
-    for (const child of Array.from(center.children)) {
-      if (child === wrap || !(child instanceof HTMLElement)) continue
-      raised.set(child, { position: child.style.position, zIndex: child.style.zIndex })
-      child.style.position = 'relative'
-      child.style.zIndex = '1'
+    // Raise the real chat surfaces (message scroll area and composer seat)
+    // above the background layer. The display:contents slot wrapper cannot
+    // take z-index, so target the actual boxes inside it.
+    const surfaces = center.querySelectorAll<HTMLElement>(
+      '[data-conversation-scroll], [data-composer-seat]',
+    )
+    for (const surface of surfaces) {
+      raised.set(surface, { position: surface.style.position, zIndex: surface.style.zIndex })
+      surface.style.position = 'relative'
+      surface.style.zIndex = '1'
     }
     window.addEventListener('pointermove', onMove)
   }
