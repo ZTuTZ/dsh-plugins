@@ -1,4 +1,8 @@
 export const PLATFORM_MODULES: readonly string[] = [
+  'react',
+  'react/jsx-runtime',
+  'react-dom',
+  'react-dom/client',
   '@deepseek-ai/dsh-client-runtime',
   '@deepseek-ai/dsh-client-runtime/client',
   '@deepseek-ai/dsh-client-connection',

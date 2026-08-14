@@ -20,7 +20,7 @@ export const APP_STORAGE_KEY = 'dsh.spiderApp.v1'
 export const APP_TOGGLE_EVENT = 'dsh:spider-app-toggle'
 
 export const defaultPersist: PetPersist = {
-  display: { visible: true, size: 160, right: 24, bottom: 20, name: '蛛蛛侠' },
+  display: { visible: true, size: 160, right: 24, bottom: 20, name: 'Peter Parker' },
 }
 
 export function loadPersist(
@@ -31,8 +31,14 @@ export function loadPersist(
     const raw = storage.getItem(PET_STORAGE_KEY)
     if (!raw) return fallback
     const parsed = JSON.parse(raw) as Partial<PetPersist>
+    const storedName = typeof parsed.display?.name === 'string' ? parsed.display.name : undefined
     return {
-      display: { ...fallback.display, ...parsed.display },
+      display: {
+        ...fallback.display,
+        ...parsed.display,
+        // The old default name was superseded by Peter Parker.
+        ...(storedName === '蛛蛛侠' ? { name: fallback.display.name } : {}),
+      },
     }
   } catch {
     return fallback
