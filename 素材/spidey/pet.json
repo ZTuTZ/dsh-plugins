@@ -1,0 +1,22 @@
+{
+  "rows": {
+    "idle": 0,
+    "waiting": 1,
+    "thinking": 2,
+    "jumping": 3,
+    "pet": 4,
+    "failed": 5
+  },
+  "frames": [
+    6,
+    6,
+    6,
+    5,
+    4,
+    4
+  ],
+  "cell": {
+    "width": 256,
+    "height": 256
+  }
+}
