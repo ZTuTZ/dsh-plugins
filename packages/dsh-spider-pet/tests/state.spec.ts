@@ -1,0 +1,21 @@
+import { describe, expect, it } from 'vitest'
+import { animationFor } from '../src/core/state.ts'
+
+describe('animationFor', () => {
+  it('maps activities to animations', () => {
+    expect(animationFor('idle', false)).toBe('idle')
+    expect(animationFor('waiting', false)).toBe('waiting')
+    expect(animationFor('thinking', false)).toBe('thinking')
+    expect(animationFor('done', false)).toBe('jumping')
+    expect(animationFor('failed', false)).toBe('failed')
+  })
+
+  it('pet animation takes priority over idle', () => {
+    expect(animationFor('idle', true)).toBe('pet')
+    expect(animationFor(undefined, true)).toBe('pet')
+  })
+
+  it('defaults to idle', () => {
+    expect(animationFor(undefined, false)).toBe('idle')
+  })
+})
