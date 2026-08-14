@@ -32,7 +32,7 @@ export const PET_RANKS = [
 ] as const
 
 export function rankOf(points: number): string {
-  let name = PET_RANKS[0].name
+  let name: string = PET_RANKS[0].name
   for (const rank of PET_RANKS) {
     if (points >= rank.min) name = rank.name
   }
