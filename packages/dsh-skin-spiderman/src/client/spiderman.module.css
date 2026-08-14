@@ -317,15 +317,9 @@ body[data-dsh-spiderman][data-ds-dark-theme] {
   --dsw-specific-tip: rgb(28, 22, 34);
 }
 
-/* ===== Surface: the app frame is translucent so the fullscreen background
-   art shows through the conversation column; the sidebar column keeps its
-   own solid --dsw-specific-sidebar-fill and stays opaque. ===== */
-body[data-dsh-spiderman] #root {
-  background: transparent;
-}
-
-body[data-dsh-spiderman] #root > * {
-  background: rgba(18, 12, 24, 0.55);
+/* ===== Surface: keep the background art under the conversation content ===== */
+body[data-dsh-spiderman] [data-dsh-spiderman-reveal] {
+  z-index: 0;
 }
 
 body[data-dsh-spiderman] .chrome {

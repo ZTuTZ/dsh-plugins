@@ -2,6 +2,9 @@ import css from './reveal.module.css'
 
 const cls = (name: keyof typeof css): string => css[name] ?? ''
 
+/** The conversation column: css-modules class keeps the centerCol token. */
+const CENTER_COL_SELECTOR = '[class*="centerCol"]'
+
 export interface RevealImages {
   peter: string
   suit: string
@@ -10,23 +13,23 @@ export interface RevealImages {
 export function mountReveal(images: RevealImages): () => void {
   let wrap: HTMLDivElement | undefined
   let peter: HTMLImageElement | undefined
-  let root: HTMLElement | undefined
+  let center: HTMLElement | undefined
 
   const onMove = (event: PointerEvent): void => {
-    if (root === undefined || peter === undefined) return
-    const rect = root.getBoundingClientRect()
+    if (center === undefined || peter === undefined) return
+    const rect = center.getBoundingClientRect()
     if (rect.width <= 0) return
-    // Reveal across the center area of the screen (the conversation column).
-    const centerLeft = rect.left + rect.width * 0.22
-    const ratio = Math.min(1, Math.max(0, (event.clientX - centerLeft) / (rect.width * 0.78)))
+    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
     const hide = `${Math.round((1 - ratio) * 100)}% 0 0 0`
     peter.style.clipPath = `inset(0 0 0 ${hide})`
   }
 
   const ensure = (): void => {
     if (wrap !== undefined) return
-    root = document.body
-    if (root === undefined) return
+    const found = document.querySelector<HTMLElement>(CENTER_COL_SELECTOR)
+    if (found === null) return
+    center = found
+    center.style.position = 'relative'
 
     wrap = document.createElement('div')
     wrap.className = cls('reveal')
@@ -41,17 +44,20 @@ export function mountReveal(images: RevealImages): () => void {
     peter.src = images.peter
     peter.alt = ''
     wrap.append(suit, peter)
-    root.appendChild(wrap)
+    center.appendChild(wrap)
     window.addEventListener('pointermove', onMove)
   }
 
+  const observer = new MutationObserver(() => { ensure() })
+  observer.observe(document.body, { childList: true, subtree: true })
   ensure()
 
   return () => {
+    observer.disconnect()
     window.removeEventListener('pointermove', onMove)
     wrap?.remove()
     wrap = undefined
-    root = undefined
+    center = undefined
     peter = undefined
   }
 }
