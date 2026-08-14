@@ -79,7 +79,7 @@ function frameTransform(pose, index, count) {
     case 'jumping': // jump arc: squash at takeoff/land, rise mid-air
       return {
         dx: 0,
-        dy: Math.round(-Math.sin(t * Math.PI) * 24),
+        dy: Math.round(-Math.sin(t * Math.PI) * 14),
         scaleX: 1 + Math.sin(t * Math.PI) * 0.05,
         scaleY: 1 - Math.sin(t * Math.PI) * 0.06,
       }
@@ -159,7 +159,10 @@ async function spriteCells(name, count) {
   const trimmed = sharp(info.data, { raw: { width: info.info.width, height: info.info.height, channels: info.info.channels } })
   console.log(`  ${name}: run ${start}..${end}, sprite ${start}..${cut}`)
   // normalize sprite to a comfortable height inside the cell
-  const BASE_H = 196
+  // Slightly shorter normalized height so every pose keeps head/foot margin
+  // inside the 256px cell (the sprites were trimmed flush to the head and
+  // feet, so at the top of a jump the head read as clipped).
+  const BASE_H = 188
   const norm = await trimmed.resize({ height: BASE_H, withoutEnlargement: false }).png().toBuffer()
   const nm = await sharp(norm).metadata()
   const cells = []

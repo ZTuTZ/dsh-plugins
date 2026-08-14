@@ -76,31 +76,11 @@ export function apply(ctx: ClientContext): void {
   const settingsScope = ctx.settingsScope.bind<{ enabled?: boolean }>({ namespace: 'spider-pet' })
   let disposer: (() => void) | undefined
   let pollTimer: number | undefined
-  let restoreEl: HTMLButtonElement | undefined
-  const mountRestore = (): void => {
-    if (restoreEl !== undefined) return
-    restoreEl = document.createElement('button')
-    restoreEl.textContent = '开启蜘蛛侠应用'
-    restoreEl.dataset.dshSpiderPetRestore = ''
-    restoreEl.style.cssText = [
-      'position:fixed', 'right:24px', 'bottom:20px', 'z-index:2147483000',
-      'border:1px dashed rgba(255,82,82,.65)', 'background:rgba(20,15,30,.9)',
-      'color:#ffb3b3', 'border-radius:999px', 'padding:6px 14px',
-      'font-size:12px', 'cursor:pointer',
-    ].join(';')
-    restoreEl.addEventListener('click', () => { controller.setAppEnabled(true) })
-    document.body.appendChild(restoreEl)
-  }
-  const unmountRestore = (): void => {
-    restoreEl?.remove()
-    restoreEl = undefined
-  }
   const syncEnabled = (): void => {
     const enabled = controller.getAppEnabled()
     if (enabled) {
       if (disposer !== undefined) return
       try {
-        unmountRestore()
         disposer = mountPet(controller, SPRITE_META, FRAME_TABLE, SPRITE_SHEET_URL)
         const poll = (): void => {
           fetch(ACTIVITY_STATE_URL)
@@ -131,7 +111,6 @@ export function apply(ctx: ClientContext): void {
         window.clearInterval(pollTimer)
         pollTimer = undefined
       }
-      mountRestore()
     }
   }
   const unsubscribe = controller.subscribe(syncEnabled)
