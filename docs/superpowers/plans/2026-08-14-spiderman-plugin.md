@@ -411,7 +411,7 @@ git commit -m "feat: scaffold spider-pet dual-face plugin package"
 import { describe, expect, it } from 'vitest'
 import { applyInteraction, rankOf, type AffinityState } from '../src/core/ledger.ts'
 
-const base: AffinityState = { points: 0, pets: 0, feeds: 0, lastPetAt: 0, lastFeedAt: 0 }
+const base: AffinityState = { points: 0, pets: 0, feeds: 0, lastPetAt: Number.NEGATIVE_INFINITY, lastFeedAt: Number.NEGATIVE_INFINITY }
 
 describe('applyInteraction', () => {
   it('grants pet points on first pet', () => {
