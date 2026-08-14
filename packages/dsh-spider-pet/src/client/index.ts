@@ -6,8 +6,12 @@ import { PetController } from '../core/controller.ts'
 import type { FrameTable } from '../core/spritesheet.ts'
 import { SPRITE_SHEET_URL } from '../assets/spritesheet.ts'
 import { mountPet } from './mount.tsx'
+import { PluginSettingsCard } from './PluginSettingsCard.tsx'
+import { en, zh, type PetLocaleKey } from './locales.ts'
 
 export const inject = ['slots', 'locale', 'settingsScope']
+
+const NS = 'spider-pet'
 
 export const SPRITE_META = { framesPerRow: 8, cellWidth: 256, cellHeight: 256 } as const
 
@@ -16,10 +20,34 @@ export const FRAME_TABLE: FrameTable = {
   frames: [6, 6, 6, 5, 4, 4],
 }
 
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    'spider-pet': PetLocaleKey
+  }
+
+  interface SlotMap {
+    'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
+  }
+}
+
+export interface SettingsPluginItemOwnerProps {
+  children?: never
+}
+
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'spider-pet: dictionaries')
+
   const storage = typeof localStorage !== 'undefined' ? localStorage : undefined
   if (storage === undefined) return
   const controller = new PetController({ storage })
+
+  ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
+    name: 'web-ui.plugin.item',
+    id: 'spider-pet',
+    order: 140,
+    locale: NS,
+    inject: () => ({ controller }),
+  }, PluginSettingsCard))
 
   const settingsScope = ctx.settingsScope.bind<{ enabled?: boolean }>({ namespace: 'spider-pet' })
   let disposer: (() => void) | undefined
