@@ -1478,6 +1478,7 @@ git commit -m "feat: register spider-pet plugin settings card"
 - Create: `packages/dsh-skin-spiderman/tsdown.config.ts`
 - Create: `packages/dsh-skin-spiderman/vitest.config.ts`
 - Create: `packages/dsh-skin-spiderman/src/client/index.ts`
+- Create: `packages/dsh-skin-spiderman/src/index.ts` (host no-op entry; required by the client bundle preset)
 
 **Interfaces:**
 - Produces: package `@deepseek-ai/dsh-client-ui-skin-spiderman`, browser-only (`dsh.client.inject: []`), plugin row `ui-skin-spiderman`, `apply(ctx)` setting `body[data-dsh-spiderman]`.
