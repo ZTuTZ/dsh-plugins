@@ -15,8 +15,7 @@ export function mountReveal(images: RevealImages): () => void {
   let suit: HTMLImageElement | undefined
   let peter: HTMLImageElement | undefined
   let center: HTMLElement | undefined
-  let viewRoot: HTMLElement | undefined
-  let viewRootBackground: string | undefined
+  const raised = new Map<HTMLElement, { position: string; zIndex: string }>()
 
   const onMove = (event: PointerEvent): void => {
     if (center === undefined || peter === undefined) return
@@ -38,18 +37,6 @@ export function mountReveal(images: RevealImages): () => void {
     center = found
     center.style.position = 'relative'
 
-    // The conversation view root paints an opaque surface that would hide the
-    // background art; make it transparent (bubbles keep their own surfaces).
-    const scrollBody = center.querySelector<HTMLElement>('[data-conversation-scroll]')
-    const root = scrollBody?.parentElement
-    if (root !== undefined && root !== null) {
-      viewRoot = root
-      viewRootBackground = root.style.background
-      root.style.background = 'transparent'
-      root.style.position = 'relative'
-      root.style.zIndex = '1'
-    }
-
     wrap = document.createElement('div')
     wrap.className = cls('reveal')
     wrap.dataset.dshSpidermanReveal = ''
@@ -64,6 +51,15 @@ export function mountReveal(images: RevealImages): () => void {
     peter.alt = ''
     wrap.append(suit, peter)
     center.prepend(wrap)
+
+    // Raise every sibling (conversation view root, scroll body, composer seat)
+    // above the background layer so chat content stays readable.
+    for (const child of Array.from(center.children)) {
+      if (child === wrap || !(child instanceof HTMLElement)) continue
+      raised.set(child, { position: child.style.position, zIndex: child.style.zIndex })
+      child.style.position = 'relative'
+      child.style.zIndex = '1'
+    }
     window.addEventListener('pointermove', onMove)
   }
 
@@ -77,13 +73,11 @@ export function mountReveal(images: RevealImages): () => void {
     wrap?.remove()
     wrap = undefined
     suit = undefined
-    if (viewRoot !== undefined) {
-      viewRoot.style.background = viewRootBackground ?? ''
-      viewRoot.style.position = ''
-      viewRoot.style.zIndex = ''
+    for (const [el, original] of raised) {
+      el.style.position = original.position
+      el.style.zIndex = original.zIndex
     }
-    viewRoot = undefined
-    viewRootBackground = undefined
+    raised.clear()
     center = undefined
     peter = undefined
   }
