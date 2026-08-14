@@ -27,7 +27,7 @@
   left: 50%;
   top: 4%;
   height: 92%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   transform: translateX(-50%);
 }
 
