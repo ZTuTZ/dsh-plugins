@@ -6,44 +6,43 @@
   pointer-events: none;
 }
 
-/* Soft red/blue energy behind the centered hero figure */
+/* Soft red/blue energy behind the hero figure */
 .glow {
   position: absolute;
   left: 50%;
-  top: 54%;
-  width: 72%;
-  height: 78%;
+  top: 46%;
+  width: 84%;
+  height: 94%;
   background:
-    radial-gradient(52% 56% at 50% 58%, rgba(217, 43, 58, 0.30), transparent 70%),
-    radial-gradient(40% 46% at 62% 44%, rgba(59, 111, 212, 0.24), transparent 72%);
+    radial-gradient(52% 56% at 50% 58%, rgba(217, 43, 58, 0.28), transparent 70%),
+    radial-gradient(40% 46% at 62% 40%, rgba(59, 111, 212, 0.22), transparent 72%);
   filter: blur(6px);
   transform: translate(-50%, -50%);
 }
 
-.figure {
+/* The figure stage: near full conversation height, centered horizontally,
+   head near the top. No transforms are animated, so the art never shakes. */
+.stage {
   position: absolute;
   left: 50%;
-  top: 52%;
-  height: 66%;
-  max-height: 640px;
+  top: 4%;
+  height: 92%;
   aspect-ratio: 3 / 4;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-  will-change: transform, mask-image, -webkit-mask-image;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
 }
 
-.suit {
-  z-index: 1;
-  filter: drop-shadow(0 0 22px rgba(217, 43, 58, 0.38))
-    drop-shadow(0 10px 30px rgba(8, 4, 10, 0.5));
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.peter {
-  z-index: 2;
-  filter: drop-shadow(0 0 20px rgba(59, 111, 212, 0.36))
-    drop-shadow(0 10px 30px rgba(8, 4, 10, 0.5));
+.hiddenImg {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Bottom vignette keeps the composer legible above the artwork */
@@ -59,17 +58,13 @@
 }
 
 @media (max-width: 760px) {
-  .figure {
-    height: 54%;
-    opacity: 0.92;
+  .stage {
+    height: 78%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .glow {
-    animation: none;
-  }
-  .figure {
-    transition: none;
+  .canvas {
+    opacity: 1;
   }
 }

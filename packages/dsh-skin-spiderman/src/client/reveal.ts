@@ -10,144 +10,197 @@ export interface RevealImages {
   suit: string
 }
 
-interface Blob {
-  x: number
-  y: number
-  r: number
-}
-
-const MAX_SAMPLES = 26
+const DYE_W = 120
+const DYE_H = 160
+const SPLAT_RADIUS = 11
+const MAX_SPLATS = 40
 
 /**
- * Fluid identity reveal: the Spider-Man suit figure floats in the middle of the
- * conversation pane. Hovering the hero paints soft "ink" wakes that follow the
- * cursor and reveal Peter Parker; moving away or resting fades back to the
- * suit.
+ * Fluid identity reveal rendered on a canvas: the suit is the base layer and a
+ * low-resolution dye field follows the pointer, diffusing like ink and masking
+ * in the Peter Parker layer. The dye is sticky while hovering the hero and
+ * dissolves back to the suit when the pointer leaves.
  */
 export function mountReveal(images: RevealImages): () => void {
   let wrap: HTMLDivElement | undefined
-  let suit: HTMLImageElement | undefined
-  let peter: HTMLImageElement | undefined
+  let stage: HTMLDivElement | undefined
+  let canvas: HTMLCanvasElement | undefined
   let center: HTMLElement | undefined
   const raised = new Map<HTMLElement, { position: string; zIndex: string }>()
 
-  const target = { x: -9999, y: -9999, active: false }
-  const main: Blob = { x: -9999, y: -9999, r: 0 }
-  const trail: Blob = { x: -9999, y: -9999, r: 0 }
-  const soft: Blob = { x: -9999, y: -9999, r: 0 }
-  const wake: Array<{ x: number; y: number }> = []
-  let wakeFade = 0
-  const parallax = { x: 0, y: 0, tx: 0, ty: 0 }
+  const suitImg = new Image()
+  const peterImg = new Image()
+  suitImg.src = images.suit
+  peterImg.src = images.peter
 
-  let rect = { left: 0, top: 0, width: 0, height: 0 }
-  let figureRect = { left: 0, top: 0, width: 0, height: 0 }
-  let peterRect = { left: 0, top: 0, width: 0, height: 0 }
-  let raf = 0
-  let reducedMotion = false
-
-  const readRect = (): void => {
-    if (center === undefined) return
-    const r = center.getBoundingClientRect()
-    if (r.width > 0 && r.height > 0) rect = { left: r.left, top: r.top, width: r.width, height: r.height }
-    if (suit !== undefined) {
-      const f = suit.getBoundingClientRect()
-      if (f.width > 0 && f.height > 0) {
-        figureRect = { left: f.left, top: f.top, width: f.width, height: f.height }
-      }
-    }
-    if (peter !== undefined) {
-      const f = peter.getBoundingClientRect()
-      if (f.width > 0 && f.height > 0) {
-        peterRect = { left: f.left, top: f.top, width: f.width, height: f.height }
-      }
-    }
+  // low-res dye field
+  const dye = new Float32Array(DYE_W * DYE_H)
+  const splats: Array<{ x: number; y: number }> = []
+  const fieldX = new Float32Array(12 * 16)
+  const fieldY = new Float32Array(12 * 16)
+  for (let i = 0; i < fieldX.length; i++) {
+    const a = Math.random() * Math.PI * 2
+    fieldX[i] = Math.cos(a)
+    fieldY[i] = Math.sin(a)
   }
 
-  const nearFigure = (clientX: number, clientY: number): boolean => {
-    const margin = Math.max(56, figureRect.height * 0.28)
-    return clientX >= figureRect.left - margin
-      && clientX <= figureRect.left + figureRect.width + margin
-      && clientY >= figureRect.top - margin
-      && clientY <= figureRect.top + figureRect.height + margin
+  let active = false
+  let raf = 0
+  let reducedMotion = false
+  let dyeCanvas: HTMLCanvasElement | undefined
+  let dyeCtx: CanvasRenderingContext2D | undefined
+  let tmpCanvas: HTMLCanvasElement | undefined
+  let tmpCtx: CanvasRenderingContext2D | undefined
+
+  const readRect = (): { left: number; top: number; width: number; height: number } => {
+    if (stage === undefined) return { left: 0, top: 0, width: 0, height: 0 }
+    const r = stage.getBoundingClientRect()
+    return { left: r.left, top: r.top, width: Math.max(1, r.width), height: Math.max(1, r.height) }
+  }
+
+  const nearFigure = (clientX: number, clientY: number, stageRect: { left: number; top: number; width: number; height: number }): boolean => {
+    const margin = Math.max(10, stageRect.height * 0.05)
+    return clientX >= stageRect.left - margin
+      && clientX <= stageRect.left + stageRect.width + margin
+      && clientY >= stageRect.top - margin
+      && clientY <= stageRect.top + stageRect.height + margin
   }
 
   const onMove = (event: PointerEvent): void => {
-    if (center === undefined || peter === undefined) return
-    const insidePane = event.clientX >= rect.left
-      && event.clientX <= rect.left + rect.width
-      && event.clientY >= rect.top
-      && event.clientY <= rect.top + rect.height
-    if (!insidePane || !nearFigure(event.clientX, event.clientY)) {
-      target.active = false
+    if (stage === undefined) return
+    const r = readRect()
+    if (!nearFigure(event.clientX, event.clientY, r)) {
+      active = false
       return
     }
-    target.active = true
-    target.x = event.clientX - peterRect.left
-    target.y = event.clientY - peterRect.top
-    wake.push({ x: target.x, y: target.y })
-    if (wake.length > MAX_SAMPLES) wake.splice(0, wake.length - MAX_SAMPLES)
-    parallax.tx = (event.clientX - (rect.left + rect.width / 2)) / Math.max(1, rect.width)
-    parallax.ty = (event.clientY - (rect.top + rect.height / 2)) / Math.max(1, rect.height)
+    active = true
+    const x = (event.clientX - r.left) / r.width * DYE_W
+    const y = (event.clientY - r.top) / r.height * DYE_H
+    splats.push({ x, y })
+    if (splats.length > MAX_SPLATS) splats.splice(0, splats.length - MAX_SPLATS)
   }
 
-  const applyMask = (radiusMain: number): void => {
-    if (peter === undefined) return
-    const layers: Array<[Blob, number]> = [
-      [main, 1.0],
-      [trail, 0.85],
-      [soft, 0.7],
-    ]
-    const gradients = layers.map(([blob, strength]) =>
-      `radial-gradient(circle ${Math.max(0, blob.r * strength)}px at ${blob.x}px ${blob.y}px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 52%, rgba(0,0,0,0) 76%)`,
-    ).join(', ')
-    const wakeGradients = wake.map((s) =>
-      `radial-gradient(circle ${Math.max(0, radiusMain * 0.9 * wakeFade)}px at ${s.x}px ${s.y}px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 52%, rgba(0,0,0,0) 76%)`,
-    )
-    const all = wakeGradients.length > 0
-      ? wakeGradients.join(', ') + ', ' + gradients
-      : gradients
-    peter.style.maskImage = all
-    peter.style.webkitMaskImage = all
+  const splat = (x: number, y: number): void => {
+    const r2 = SPLAT_RADIUS * SPLAT_RADIUS
+    const x0 = Math.max(0, Math.floor(x - SPLAT_RADIUS))
+    const x1 = Math.min(DYE_W - 1, Math.ceil(x + SPLAT_RADIUS))
+    const y0 = Math.max(0, Math.floor(y - SPLAT_RADIUS))
+    const y1 = Math.min(DYE_H - 1, Math.ceil(y + SPLAT_RADIUS))
+    for (let yy = y0; yy <= y1; yy++) {
+      for (let xx = x0; xx <= x1; xx++) {
+        const dx = xx - x
+        const dy = yy - y
+        const d2 = dx * dx + dy * dy
+        if (d2 <= r2) {
+          const k = 1 - Math.sqrt(d2) / SPLAT_RADIUS
+          const i = yy * DYE_W + xx
+          dye[i] = Math.min(2.0, dye[i] + k * k * (1.8 + Math.random() * 0.3))
+        }
+      }
+    }
   }
 
-  const lerp = (a: number, b: number, t: number): number => a + (b - a) * t
+  const sampleField = (x: number, y: number, field: Float32Array, gw: number, gh: number): number => {
+    const fx = Math.min(gw - 1.001, Math.max(0, x / DYE_W * gw))
+    const fy = Math.min(gh - 1.001, Math.max(0, y / DYE_H * gh))
+    const x0 = Math.floor(fx)
+    const y0 = Math.floor(fy)
+    const tx = fx - x0
+    const ty = fy - y0
+    const i = y0 * gw + x0
+    const a = field[i]
+    const b = field[i + 1]
+    const c = field[i + gw]
+    const d = field[i + gw + 1]
+    return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty
+  }
 
-  const tick = (now: number): void => {
+  const tick = (): void => {
     raf = requestAnimationFrame(tick)
-    if (peter === undefined || suit === undefined || reducedMotion) return
-    if (peterRect.width <= 0) readRect()
+    try {
+      if (canvas === undefined || stage === undefined) return
+      const ctx = canvas.getContext('2d')
+      if (ctx === null) return
+      if (!suitImg.complete || !peterImg.complete) return
+      if (reducedMotion) {
+        // Static suit backdrop for reduced-motion users; no fluid loop.
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(suitImg, 0, 0, canvas.width, canvas.height)
+        return
+      }
+      if (dyeCanvas === undefined || dyeCtx === undefined || tmpCanvas === undefined || tmpCtx === undefined) return
 
-    const speedMain = 0.16
-    const speedTrail = 0.10
-    const speedSoft = 0.06
-    const radiusMain = Math.min(230, Math.max(96, figureRect.height * 0.34))
+      // Advect the dye along a noise field (slow swirl). While hovering the
+      // dye is persistent so the swept area stays revealed; leaving dissolves
+      // it back to the suit. Nearest sampling keeps the ink crisp.
+      const next = new Float32Array(DYE_W * DYE_H)
+      const decay = active ? 1 : 0.93
+      for (let y = 1; y < DYE_H - 1; y++) {
+        for (let x = 1; x < DYE_W - 1; x++) {
+          const i = y * DYE_W + x
+          const v = dye[i]
+          if (v <= 0.003) continue
+          const fx = sampleField(x, y, fieldX, 12, 16) * 0.9
+          const fy = sampleField(x, y, fieldY, 12, 16) * 0.9
+          const sx = Math.min(DYE_W - 2, Math.max(1, x + fx))
+          const sy = Math.min(DYE_H - 2, Math.max(1, y + fy))
+          next[i] = Math.max(0, Math.min(1, dye[Math.round(sy) * DYE_W + Math.round(sx)] * decay))
+        }
+      }
+      dye.set(next)
 
-    const tx = target.active ? target.x : peterRect.width + 120
-    const ty = target.active ? target.y : peterRect.height + 160
-    const tr = target.active ? radiusMain : 0
+      while (splats.length > 0) {
+        const s = splats.shift()!
+        splat(s.x, s.y)
+      }
 
-    main.x = lerp(main.x, tx, speedMain)
-    main.y = lerp(main.y, ty, speedMain)
-    main.r = lerp(main.r, tr, speedMain)
-    trail.x = lerp(trail.x, tx, speedTrail)
-    trail.y = lerp(trail.y, ty, speedTrail)
-    trail.r = lerp(trail.r, tr, speedTrail)
-    soft.x = lerp(soft.x, tx, speedSoft)
-    soft.y = lerp(soft.y, ty, speedSoft)
-    soft.r = lerp(soft.r, tr, speedSoft)
+      // paint the dye field to the low-res canvas
+      const imgData = dyeCtx.createImageData(DYE_W, DYE_H)
+      const data = imgData.data
+      for (let i = 0; i < dye.length; i++) {
+        const a = Math.min(1, dye[i])
+        data[i * 4] = 255
+        data[i * 4 + 1] = 255
+        data[i * 4 + 2] = 255
+        data[i * 4 + 3] = Math.round(Math.min(1, a / 0.3) * 255)
+      }
+      dyeCtx.putImageData(imgData, 0, 0)
 
-    const wantFade = target.active ? 1 : 0
-    wakeFade = lerp(wakeFade, wantFade, target.active ? 0.14 : 0.06)
-    if (!target.active && wakeFade < 0.03 && wake.length > 0) wake.length = 0
+      // composite: suit base, then peter masked by the dye
+      const w = canvas.width
+      const h = canvas.height
+      tmpCtx.clearRect(0, 0, w, h)
+      tmpCtx.drawImage(peterImg, 0, 0, w, h)
+      tmpCtx.globalCompositeOperation = 'destination-in'
+      tmpCtx.imageSmoothingEnabled = true
+      tmpCtx.drawImage(dyeCanvas, 0, 0, w, h)
+      tmpCtx.globalCompositeOperation = 'source-over'
 
-    parallax.x = lerp(parallax.x, parallax.tx, 0.08)
-    parallax.y = lerp(parallax.y, parallax.ty, 0.08)
-    const px = Math.round(parallax.x * -12)
-    const py = Math.round(parallax.y * -8)
-    suit.style.transform = `translate(-50%, -50%) translate3d(${px}px, ${py}px, 0) scale(1.04)`
-    peter.style.transform = `translate(-50%, -50%) translate3d(${Math.round(px * 0.55)}px, ${Math.round(py * 0.55)}px, 0)`
+      ctx.clearRect(0, 0, w, h)
+      ctx.drawImage(suitImg, 0, 0, w, h)
+      ctx.drawImage(tmpCanvas, 0, 0)
+    } catch (err) {
+      console.warn('[skin-spiderman] reveal tick error:', err)
+    }
+  }
 
-    applyMask(radiusMain)
+  const resize = (): void => {
+    if (canvas === undefined || stage === undefined) return
+    const r = stage.getBoundingClientRect()
+    if (r.width <= 0 || r.height <= 0) return
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.round(r.width * dpr)
+    canvas.height = Math.round(r.height * dpr)
+    canvas.style.width = `${Math.round(r.width)}px`
+    canvas.style.height = `${Math.round(r.height)}px`
+    dyeCanvas = document.createElement('canvas')
+    dyeCanvas.width = DYE_W
+    dyeCanvas.height = DYE_H
+    dyeCtx = dyeCanvas.getContext('2d') ?? undefined
+    tmpCanvas = document.createElement('canvas')
+    tmpCanvas.width = canvas.width
+    tmpCanvas.height = canvas.height
+    tmpCtx = tmpCanvas.getContext('2d') ?? undefined
   }
 
   const ensure = (): void => {
@@ -166,30 +219,30 @@ export function mountReveal(images: RevealImages): () => void {
     glow.dataset.dshGlow = ''
     glow.setAttribute('aria-hidden', 'true')
 
-    suit = document.createElement('img')
-    suit.className = cls('figure') + ' ' + cls('suit')
-    suit.dataset.dshFigure = 'suit'
-    suit.src = images.suit
-    suit.alt = ''
-    suit.draggable = false
+    stage = document.createElement('div')
+    stage.className = cls('stage')
+    stage.dataset.dshStage = ''
 
-    peter = document.createElement('img')
-    peter.className = cls('figure') + ' ' + cls('peter')
-    peter.dataset.dshFigure = 'peter'
-    peter.src = images.peter
-    peter.alt = ''
-    peter.draggable = false
-    // Start with Peter fully masked out so the suit is the default state.
-    const hiddenMask = 'radial-gradient(circle 0px at 0px 0px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 52%, rgba(0,0,0,0) 76%)'
-    peter.style.maskImage = hiddenMask
-    peter.style.webkitMaskImage = hiddenMask
+    canvas = document.createElement('canvas')
+    canvas.className = cls('canvas')
+    canvas.setAttribute('aria-hidden', 'true')
 
-    wrap.append(glow, suit, peter)
+    const suitEl = document.createElement('img')
+    suitEl.className = cls('hiddenImg')
+    suitEl.dataset.dshFigure = 'suit'
+    suitEl.src = images.suit
+    suitEl.alt = ''
+
+    const peterEl = document.createElement('img')
+    peterEl.className = cls('hiddenImg')
+    peterEl.dataset.dshFigure = 'peter'
+    peterEl.src = images.peter
+    peterEl.alt = ''
+
+    stage.append(canvas, suitEl, peterEl)
+    wrap.append(glow, stage)
     center.prepend(wrap)
 
-    // Raise the real chat surfaces (message scroll area and composer seat)
-    // above the background layer. The display:contents slot wrapper cannot
-    // take z-index, so target the actual boxes inside it.
     const surfaces = center.querySelectorAll<HTMLElement>(
       '[data-conversation-scroll], [data-composer-seat]',
     )
@@ -202,18 +255,15 @@ export function mountReveal(images: RevealImages): () => void {
     reducedMotion = typeof matchMedia !== 'undefined'
       && matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    readRect()
     window.addEventListener('pointermove', onMove, { passive: true })
-    window.addEventListener('resize', readRect)
-    if (!reducedMotion) {
-      main.x = peterRect.width + 120
-      main.y = peterRect.height + 160
-      trail.x = main.x
-      trail.y = main.y
-      soft.x = main.x
-      soft.y = main.y
-      raf = requestAnimationFrame(tick)
+    window.addEventListener('resize', resize)
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => resize())
+      ro.observe(stage)
+      ;(wrap as unknown as { __ro?: ResizeObserver }).__ro = ro
     }
+    resize()
+    raf = requestAnimationFrame(tick)
   }
 
   const observer = new MutationObserver(() => { ensure() })
@@ -224,11 +274,13 @@ export function mountReveal(images: RevealImages): () => void {
     observer.disconnect()
     cancelAnimationFrame(raf)
     window.removeEventListener('pointermove', onMove)
-    window.removeEventListener('resize', readRect)
+    window.removeEventListener('resize', resize)
+    const ro = (wrap as unknown as { __ro?: ResizeObserver } | undefined)?.__ro
+    ro?.disconnect()
     wrap?.remove()
     wrap = undefined
-    suit = undefined
-    peter = undefined
+    stage = undefined
+    canvas = undefined
     for (const [el, original] of raised) {
       el.style.position = original.position
       el.style.zIndex = original.zIndex
