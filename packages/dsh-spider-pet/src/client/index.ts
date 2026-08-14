@@ -8,6 +8,7 @@ import type { FrameTable } from '../core/spritesheet.ts'
 import { SPRITE_SHEET_URL } from '../assets/spritesheet.ts'
 import { mountPet } from './mount.tsx'
 import { PluginSettingsCard } from './PluginSettingsCard.tsx'
+import { SpiderAppTab } from './SpiderAppTab.tsx'
 import { en, zh, type PetLocaleKey } from './locales.ts'
 
 export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope']
@@ -53,6 +54,14 @@ export function apply(ctx: ClientContext): void {
   const storage = typeof localStorage !== 'undefined' ? localStorage : undefined
   if (storage === undefined) return
   const controller = new PetController({ storage })
+
+  // One tab inside the official Plugins settings page: the spider-app switch.
+  ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
+    name: 'settings.plugins.tab',
+    id: 'spider-app',
+    order: 30,
+    label: () => '蜘蛛侠',
+  }, SpiderAppTab))
 
   ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
     name: 'web-ui.plugin.item',

@@ -332,6 +332,17 @@ body[data-dsh-spiderman] .chrome {
   mix-blend-mode: screen;
 }
 
+/* The HARNESS badge plate in the brand wordmark rides currentColor, which
+   the dark skin sets to a light ink — and the plate text's inverted token can
+   be overridden by official theme CSS loaded later. Fix both explicitly so
+   the badge is always a legible red plate with white text. */
+body[data-dsh-spiderman] svg rect[x="129.348"] {
+  fill: rgb(217, 43, 58);
+}
+body[data-dsh-spiderman] svg g[clip-path*="badge"] path {
+  fill: rgb(255, 255, 255);
+}
+
 /* ===== Force the dark cinematic look regardless of the OS theme ===== */
 body[data-dsh-spiderman] {
   /* Static palette must be dark too: the light block above keeps these as
