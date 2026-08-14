@@ -75,9 +75,7 @@ export function PetView(props: PetViewProps): JSX.Element {
       className={css.petView}
       data-dsh-spider-pet=""
       style={{ right: persist.display.right, bottom: persist.display.bottom, width: persist.display.size, height: persist.display.size }}
-      onClick={handleClick}
       onContextMenu={(e) => { e.preventDefault(); props.onPanel() }}
-      onPointerDown={props.onDrag}
       role="button"
       aria-label={persist.display.name}
     >
@@ -86,6 +84,8 @@ export function PetView(props: PetViewProps): JSX.Element {
       ) : null}
       <div
         className={css.petSprite}
+        onClick={handleClick}
+        onPointerDown={props.onDrag}
         style={{
           backgroundImage: `url(${props.sheetUrl})`,
           backgroundSize: `${props.meta.framesPerRow * props.meta.cellWidth * scale}px ${Object.keys(props.table.rows).length * props.meta.cellHeight * scale}px`,

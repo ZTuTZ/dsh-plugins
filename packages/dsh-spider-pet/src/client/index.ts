@@ -31,7 +31,7 @@ const PHASE_MAP: Record<string, PetActivity> = {
 }
 
 const ACTIVITY_STATE_URL = '/api/spider-pet/state'
-const POLL_MS = 800
+const POLL_MS = 400
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {

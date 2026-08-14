@@ -31,15 +31,15 @@ export const Config: z<Config> = z.object({
 
 const GUIDANCE = '本机已安装 dsh-spider-pet 插件：右下角有一只蜘蛛侠卡通宠物，会跟随模型工作状态切换动画，可点击摸头、改名、拖动；用户提到「宠物/蜘蛛侠/蛛蛛侠」时即指本插件。'
 
-/** DSH activity/status phases the pet tracks. */
-type ActivityPhase = 'idle' | 'waiting' | 'thinking' | 'tool' | 'done'
-
-/** One session/event guard: only the latest activity snapshot matters. */
-interface ActivityStatusEventLike {
-  phase?: string
-  line?: string
-  phrase?: string
-}
+/**
+ * Pet phases derived from the harness's own session events. The official
+ * build has no `activity/status` event (that came from a dsh-web-ui helper
+ * plugin that is not installed), so the tracker maps the real event
+ * vocabulary onto the pet's animation rows:
+ *   turn/start + tool/call → thinking (working), turn/end → done
+ *   (celebrate), user/message → waiting, session end → idle.
+ */
+type ActivityPhase = 'idle' | 'waiting' | 'thinking' | 'done'
 
 /** Host-side pet activity tracker + HTTP surface. */
 export function makePetActivity(ctx: Context): {
@@ -48,25 +48,56 @@ export function makePetActivity(ctx: Context): {
 } {
   let phase: ActivityPhase = 'idle'
   let phrase: string | undefined
-  let line: string | undefined
+  let turnActive = false
+  let celebrateUntil = 0
+  const now = (): number => Date.now()
   const offs = [
     ctx.on('session/event', (_session: Session, event: { type: string; data?: unknown }) => {
-      if (event.type !== 'activity/status') return
-      const payload = (event.data ?? {}) as ActivityStatusEventLike
-      if (payload.phase === undefined) return
-      if (!['idle', 'waiting', 'thinking', 'tool', 'done'].includes(payload.phase)) return
-      phase = payload.phase as ActivityPhase
-      if (typeof payload.phrase === 'string') phrase = payload.phrase
-      if (typeof payload.line === 'string') line = payload.line
+      switch (event.type) {
+        case 'turn/start':
+        case 'step/start':
+          turnActive = true
+          phase = 'thinking'
+          break
+        case 'tool/call': {
+          turnActive = true
+          phase = 'thinking'
+          const name = (event.data as { name?: unknown } | undefined)?.name
+          phrase = typeof name === 'string' ? `正在调用 ${name}` : undefined
+          break
+        }
+        case 'tool/result':
+          if (turnActive) {
+            phase = 'thinking'
+            phrase = undefined
+          }
+          break
+        case 'turn/end':
+          turnActive = false
+          phase = 'done'
+          celebrateUntil = now() + 2400
+          phrase = undefined
+          break
+        case 'user/message':
+          turnActive = false
+          phase = 'waiting'
+          phrase = undefined
+          break
+      }
     }),
     ctx.on('session/disposed', () => {
+      turnActive = false
       phase = 'idle'
       phrase = undefined
-      line = undefined
+      celebrateUntil = 0
     }),
   ]
   return {
-    state: () => ({ phase, ...(phrase === undefined ? {} : { phrase }), ...(line === undefined ? {} : { line }) }),
+    state: () => {
+      // The celebration window after a turn settles back to idle.
+      if (phase === 'done' && now() >= celebrateUntil) phase = 'idle'
+      return { phase, ...(phrase === undefined ? {} : { phrase }) }
+    },
     dispose: () => { for (const off of offs) off() },
   }
 }

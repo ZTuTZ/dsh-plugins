@@ -16,11 +16,10 @@ import sharp from 'sharp'
 
 const POSES = ['idle', 'waiting', 'thinking', 'jumping', 'pet']
 const FRAMES = [8, 6, 6, 6, 5]
-// Poses whose JPEG holds TWO sprites side by side (a seedream quirk) and
-// need splitting. `pet` (and the removed `failed`) is a SINGLE wide sprite
-// (near-shot crouch with an outstretched arm) — splitting it would cut the
-// right arm off at the shoulder.
-const SPLIT_POSES = new Set(['idle', 'waiting', 'thinking', 'jumping'])
+// All five poses were regenerated as single full-body characters (the old
+// JPEGs held two sprites side by side, which is why this split existed).
+// Splitting any of them would cut the right arm off at the shoulder.
+const SPLIT_POSES = new Set([])
 const CELL = 256
 const COLS = 8
 const ROOT = process.cwd()
