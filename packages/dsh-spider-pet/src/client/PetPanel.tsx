@@ -1,0 +1,48 @@
+import { useState } from 'react'
+import type { PetController } from '../core/controller.ts'
+import { rankOf } from '../core/ledger.ts'
+import css from './pet.module.css'
+
+export interface PetPanelProps {
+  controller: PetController
+  onClose: () => void
+}
+
+export function PetPanel(props: PetPanelProps): JSX.Element {
+  const [name, setName] = useState('')
+  const snapshot = props.controller.getSnapshot()
+  const { persist } = snapshot
+
+  return (
+    <div className={css.panel} data-dsh-spider-pet-panel="">
+      <div className={css.panelHeader}>
+        <b>{persist.display.name}</b>
+        <span>{rankOf(persist.affinity.points)}</span>
+        <button type="button" onClick={props.onClose}>x</button>
+      </div>
+      <div className={css.panelRow}>
+        <span>亲密度 {persist.affinity.points}/100</span>
+        <button type="button" onClick={() => { props.controller.interact('feed'); props.onClose() }}>喂食</button>
+      </div>
+      <div className={css.panelRow}>
+        <input
+          value={name}
+          placeholder="新名字"
+          maxLength={20}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <button
+          type="button"
+          onClick={() => { props.controller.rename(name); setName(''); props.onClose() }}
+        >
+          改名
+        </button>
+      </div>
+      <div className={css.panelRow}>
+        <button type="button" onClick={() => { props.controller.setDisplay({ visible: false }); props.onClose() }}>隐藏</button>
+        <button type="button" onClick={() => { props.controller.setDisplay({ size: Math.max(80, persist.display.size - 20) }); props.onClose() }}>-</button>
+        <button type="button" onClick={() => { props.controller.setDisplay({ size: Math.min(320, persist.display.size + 20) }); props.onClose() }}>+</button>
+      </div>
+    </div>
+  )
+}

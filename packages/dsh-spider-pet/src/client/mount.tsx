@@ -16,6 +16,28 @@ export function mountPet(
   document.body.appendChild(container)
   const root: Root = createRoot(container)
 
+  let panelOpen = false
+  const togglePanel = (): void => { panelOpen = !panelOpen }
+
+  const onDrag = (event: React.PointerEvent): void => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startY = event.clientY
+    const base = controller.getSnapshot().persist.display
+    const move = (ev: PointerEvent): void => {
+      controller.setDisplay({
+        right: Math.max(0, base.right - (ev.clientX - startX)),
+        bottom: Math.max(0, base.bottom - (ev.clientY - startY)),
+      })
+    }
+    const up = (): void => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+
   const render = (): void => {
     root.render(
       <PetView
@@ -24,6 +46,9 @@ export function mountPet(
         table={table}
         sheetUrl={sheetUrl}
         onInteract={() => { controller.interact('pet') }}
+        onPanel={togglePanel}
+        panelOpen={panelOpen}
+        onDrag={onDrag}
       />,
     )
   }

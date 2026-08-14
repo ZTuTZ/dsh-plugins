@@ -3,6 +3,7 @@ import type { PetController, PetPersist } from '../core/controller.ts'
 import type { FrameTable, SpriteSheetMeta } from '../core/spritesheet.ts'
 import type { PetAnimation } from '../core/state.ts'
 import { framePosition, totalFrames } from '../core/spritesheet.ts'
+import { PetPanel } from './PetPanel.tsx'
 import css from './pet.module.css'
 
 export interface PetViewProps {
@@ -11,6 +12,9 @@ export interface PetViewProps {
   table: FrameTable
   sheetUrl: string
   onInteract: () => void
+  onPanel: () => void
+  panelOpen: boolean
+  onDrag: (event: React.PointerEvent) => void
 }
 
 export function PetView(props: PetViewProps): JSX.Element {
@@ -48,6 +52,8 @@ export function PetView(props: PetViewProps): JSX.Element {
       data-dsh-spider-pet=""
       style={{ right: persist.display.right, bottom: persist.display.bottom, width: persist.display.size, height: persist.display.size }}
       onClick={handleClick}
+      onContextMenu={(e) => { e.preventDefault(); props.onPanel() }}
+      onPointerDown={props.onDrag}
       role="button"
       aria-label={persist.display.name}
     >
@@ -60,6 +66,7 @@ export function PetView(props: PetViewProps): JSX.Element {
           backgroundPosition: `-${pos.x}px -${pos.y}px`,
         }}
       />
+      {props.panelOpen ? <PetPanel controller={props.controller} onClose={props.onPanel} /> : null}
     </div>
   )
 }
