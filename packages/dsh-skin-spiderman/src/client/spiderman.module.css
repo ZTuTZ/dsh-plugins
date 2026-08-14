@@ -1,0 +1,37 @@
+:global(body[data-dsh-spiderman]) {
+  --dsh-accent: #d92b3a;
+  --dsh-accent-strong: #b91f2b;
+  --dsh-accent-blue: #3b6fd4;
+  --dsh-accent-blue-strong: #24448f;
+  --dsh-bg-deep: #120f1a;
+  --dsh-surface: #1b1526;
+  --dsh-border: rgba(217, 43, 58, 0.35);
+  --dsh-text: #f2f4f8;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(217, 43, 58, 0.18), transparent 55%),
+    radial-gradient(circle at 85% 15%, rgba(59, 111, 212, 0.16), transparent 50%),
+    var(--dsh-bg-deep);
+  color: var(--dsh-text);
+}
+
+:global(body[data-dsh-spiderman]) button,
+:global(body[data-dsh-spiderman]) [role='button'] {
+  border-color: var(--dsh-border);
+}
+
+:global(body[data-dsh-spiderman]) input,
+:global(body[data-dsh-spiderman]) textarea {
+  background: rgba(18, 15, 26, 0.75);
+  border: 1px solid var(--dsh-border);
+  color: var(--dsh-text);
+}
+
+.chrome {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(217, 43, 58, 0.06) 40%, rgba(59, 111, 212, 0.08) 100%);
+  mix-blend-mode: screen;
+}
