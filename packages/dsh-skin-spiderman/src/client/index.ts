@@ -103,6 +103,33 @@ function mountSidebarChrome(): () => void {
   }
 }
 
+/** Spider-mark preview inside the spider-app settings card (the card mounts
+ *  lazily when the settings dialog opens, so watch for it). */
+const SETTINGS_ROW_SELECTOR = '[data-dsh-spider-pet-settings]'
+
+function mountSettingsMark(): () => void {
+  const marks = new Map<Element, HTMLElement>()
+  const tryMount = (): void => {
+    for (const row of document.querySelectorAll<HTMLElement>(SETTINGS_ROW_SELECTOR)) {
+      if (marks.has(row)) continue
+      const mark = document.createElement('span')
+      mark.className = cls('settingsMark')
+      mark.style.backgroundImage = `url(${SPIDER_MARK_URL})`
+      mark.setAttribute('aria-hidden', 'true')
+      row.prepend(mark)
+      marks.set(row, mark)
+    }
+  }
+  const observer = new MutationObserver(() => tryMount())
+  observer.observe(document.body, { childList: true, subtree: true })
+  tryMount()
+  return () => {
+    observer.disconnect()
+    for (const mark of marks.values()) mark.remove()
+    marks.clear()
+  }
+}
+
 export function apply(ctx: Context): void {
   let disposer: (() => void) | undefined
   const sync = (): void => {
@@ -129,6 +156,7 @@ export function apply(ctx: Context): void {
         const disposers: Array<() => void> = []
         disposers.push(mountReveal({ peter: PETER_URL, suit: SUIT_URL }))
         disposers.push(mountSidebarChrome())
+        disposers.push(mountSettingsMark())
 
         return () => {
           chrome.remove()

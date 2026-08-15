@@ -656,3 +656,73 @@ body[data-dsh-spiderman] [class*="_collapsed"] [class*="sidebarStatus"] {
     display: none;
   }
 }
+
+/* ===== Settings dialog =====
+   VOzbGW_* are the settings-shell classes of the current web profile
+   (0.1.0-rc.6); if a future dsh version renames them, these rules degrade
+   gracefully to the token-only look. */
+body[data-dsh-spiderman] [class*="VOzbGW_panel"] {
+  box-shadow:
+    0 0 0 1px rgba(217, 43, 58, 0.2),
+    0 0 46px rgba(217, 43, 58, 0.14),
+    var(--dsw-shadow-lv3);
+}
+body[data-dsh-spiderman] [class*="VOzbGW_panel"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--dsw-static-deepseek-500), var(--dsw-static-blue-500));
+}
+body[data-dsh-spiderman] [class*="VOzbGW_mask"] {
+  background: linear-gradient(160deg, rgba(23, 15, 29, 0.6), rgba(10, 6, 14, 0.55));
+}
+body[data-dsh-spiderman] [class*="VOzbGW_navCell"]:hover {
+  background: linear-gradient(90deg, rgba(217, 43, 58, 0.12), rgba(59, 111, 212, 0.08));
+}
+body[data-dsh-spiderman] [class*="VOzbGW_navCell"][class*="VOzbGW_active"] {
+  background: linear-gradient(90deg, rgba(217, 43, 58, 0.2), rgba(59, 111, 212, 0.1));
+  box-shadow: inset 3px 0 0 var(--dsw-alias-brand-primary);
+}
+
+/* ===== Plugin inventory: sub-tabs + cards ===== */
+body[data-dsh-spiderman] [class*="pbvGtq_tab"][data-active="true"] {
+  color: var(--dsw-alias-brand-primary);
+}
+body[data-dsh-spiderman] [class*="pbvGtq_tab"][data-active="true"]:after {
+  background: var(--dsw-alias-brand-primary);
+}
+body[data-dsh-spiderman] [class*="YyYd_a_card"] {
+  background: linear-gradient(120deg, rgba(31, 24, 38, 0.92), rgba(24, 18, 31, 0.95));
+  border-color: rgba(217, 43, 58, 0.16);
+  transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
+}
+body[data-dsh-spiderman] [class*="YyYd_a_card"]:hover {
+  border-color: rgba(217, 43, 58, 0.42);
+  box-shadow: 0 4px 18px rgba(217, 43, 58, 0.12);
+}
+body[data-dsh-spiderman] [class*="YyYd_a_cardOpen"] {
+  border-color: rgba(217, 43, 58, 0.35);
+  box-shadow: 0 0 0 1px rgba(59, 111, 212, 0.14), 0 6px 22px rgba(217, 43, 58, 0.1);
+}
+
+/* ===== Spider-app settings row: compact row + mark slot (mark injected) ===== */
+body[data-dsh-spiderman] [data-dsh-spider-pet-settings] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.settingsMark {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 0 6px rgba(217, 43, 58, 0.55));
+}
