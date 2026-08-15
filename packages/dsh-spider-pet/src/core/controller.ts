@@ -77,12 +77,14 @@ export class PetController {
   private persist: PetPersist
   private appEnabled: boolean
   private activity: PetActivity = 'idle'
-  private petTriggeredAt = Number.NEGATIVE_INFINITY
+  private jumpAt = Number.NEGATIVE_INFINITY
+  private petAt = Number.NEGATIVE_INFINITY
   /** Status phrase/line from the host activity tracker, shown as a bubble. */
   private bubble: string | undefined
   private listeners = new Set<() => void>()
   private readonly now: () => number
   /** How long the pet animation runs after a pet interaction (ms). */
+  private readonly jumpWindowMs = 1600
   private readonly petWindowMs = 1600
 
   constructor(private readonly deps: PetControllerDeps) {
@@ -98,8 +100,9 @@ export class PetController {
     bubble: string | undefined
     appEnabled: boolean
   } {
-    const petTriggered = this.now() - this.petTriggeredAt < this.petWindowMs
-    const animation = animationFor(this.activity, petTriggered)
+    const jumpTriggered = this.now() - this.jumpAt < this.jumpWindowMs
+    const petTriggered = this.now() - this.petAt < this.petWindowMs
+    const animation = animationFor(this.activity, jumpTriggered, petTriggered)
     return {
       persist: this.persist,
       activity: this.activity,
@@ -127,9 +130,15 @@ export class PetController {
     this.notify()
   }
 
-  /** Trigger the pet animation (no affinity bookkeeping). */
+  /** Click interaction: play the happy jump (no affinity bookkeeping). */
   interact(): void {
-    this.petTriggeredAt = this.now()
+    this.jumpAt = this.now()
+    this.notify()
+  }
+
+  /** Double-click petting: play the dedicated happy pet pose. */
+  interactPet(): void {
+    this.petAt = this.now()
     this.notify()
   }
 

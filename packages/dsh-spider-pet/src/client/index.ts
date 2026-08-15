@@ -18,8 +18,8 @@ const NS = 'spider-pet'
 export const SPRITE_META = { framesPerRow: 16, cellWidth: 256, cellHeight: 256 } as const
 
 export const FRAME_TABLE: FrameTable = {
-  rows: { idle: 0, waiting: 1, thinking: 2, jumping: 3 },
-  frames: [16, 12, 12, 12],
+  rows: { idle: 0, waiting: 1, thinking: 2, jumping: 3, pet: 4, failed: 5 },
+  frames: [16, 12, 12, 12, 12, 12],
 }
 
 /** Host `activity/status` phase → pet activity (`tool` shares the thinking row). */
@@ -29,6 +29,8 @@ const PHASE_MAP: Record<string, PetActivity> = {
   thinking: 'thinking',
   tool: 'thinking',
   done: 'done',
+  pet: 'pet',
+  failed: 'failed',
 }
 
 const ACTIVITY_STATE_URL = '/api/spider-pet/state'

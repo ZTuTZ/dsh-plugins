@@ -53,7 +53,7 @@ describe('makePetActivity', () => {
     expect(tracker.state().phase).toBe('idle')
   })
 
-  it('settles the celebration back to idle after the window', () => {
+  it('settles the celebration back to waiting after the window', () => {
     vi.useFakeTimers()
     vi.setSystemTime(1_000_000)
     const { ctx, emit } = mockCtx()
@@ -61,7 +61,33 @@ describe('makePetActivity', () => {
     emit('session/event', {}, { type: 'turn/end', data: { turn: 1, reason: 'ok' } })
     expect(tracker.state().phase).toBe('done')
     vi.advanceTimersByTime(2_500)
-    expect(tracker.state().phase).toBe('idle')
+    expect(tracker.state().phase).toBe('waiting')
+    tracker.dispose()
+  })
+
+  it('holds the waiting pose through the minimum window when the turn starts', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000_000)
+    const { ctx, emit } = mockCtx()
+    const tracker = makePetActivity(ctx)
+    emit('session/event', {}, { type: 'user/message', data: {} })
+    expect(tracker.state().phase).toBe('waiting')
+    emit('session/event', {}, { type: 'turn/start', data: { turn: 1 } })
+    expect(tracker.state().phase).toBe('waiting')
+    vi.advanceTimersByTime(1_300)
+    expect(tracker.state().phase).toBe('thinking')
+    tracker.dispose()
+  })
+
+  it('shows the failed pose when a turn ends with an error, then waits', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000_000)
+    const { ctx, emit } = mockCtx()
+    const tracker = makePetActivity(ctx)
+    emit('session/event', {}, { type: 'turn/end', data: { turn: 1, reason: { kind: 'error' } } })
+    expect(tracker.state().phase).toBe('failed')
+    vi.advanceTimersByTime(3_100)
+    expect(tracker.state().phase).toBe('waiting')
     tracker.dispose()
   })
 })

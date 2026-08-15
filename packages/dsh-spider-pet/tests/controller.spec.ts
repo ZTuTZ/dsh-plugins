@@ -42,6 +42,15 @@ describe('PetController', () => {
     expect(controller.getSnapshot().animation).toBe('idle')
   })
 
+  it('triggers the pet pose for a window after petting', () => {
+    let now = 0
+    const controller = new PetController({ storage: memoryStorage(), now: () => now })
+    controller.interactPet()
+    expect(controller.getSnapshot().animation).toBe('pet')
+    now = 2000
+    expect(controller.getSnapshot().animation).toBe('idle')
+  })
+
   it('maps activity to animation', () => {
     const controller = new PetController({ storage: memoryStorage(), now: () => 0 })
     expect(controller.getSnapshot().animation).toBe('idle')
@@ -51,6 +60,8 @@ describe('PetController', () => {
     expect(controller.getSnapshot().animation).toBe('thinking')
     controller.setActivity('done')
     expect(controller.getSnapshot().animation).toBe('jumping')
+    controller.setActivity('failed')
+    expect(controller.getSnapshot().animation).toBe('failed')
   })
 
   it('carries and clears a status bubble', () => {

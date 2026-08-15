@@ -14,10 +14,14 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
 
-const POSES = ['idle', 'waiting', 'thinking', 'jumping']
+const POSES = ['idle', 'waiting', 'thinking', 'jumping', 'pet', 'failed']
 // Double the frame count per pose for smoother animation (the atlas keeps a
-// 16-column row, so 16/12/12/12/10 frames fit without changing cell size).
-const FRAMES = [16, 12, 12, 12]
+// 16-column row, so 16/12/12/12/12/12 frames fit without changing cell size).
+const FRAMES = [16, 12, 12, 12, 12, 12]
+// Per-pose normalized height inside the 256px cell. The sprawled "failed"
+// pose is much wider than the others, so it needs a shorter height to keep
+// the full character inside the cell horizontally.
+const BASE_H = { idle: 188, waiting: 188, thinking: 188, jumping: 188, pet: 188, failed: 140 }
 // All five poses were regenerated as single full-body characters (the old
 // JPEGs held two sprites side by side, which is why this split existed).
 // Splitting any of them would cut the right arm off at the shoulder.
@@ -83,6 +87,8 @@ function frameTransform(pose, index, count) {
         scaleX: 1 + Math.sin(t * Math.PI) * 0.05,
         scaleY: 1 - Math.sin(t * Math.PI) * 0.06,
       }
+    case 'pet': // being petted: gentle contented bounce + soft squash
+      return { dx: 0, dy: Math.round(Math.sin(phase) * 2.5), scaleX: 1, scaleY: 1 + Math.sin(phase) * 0.015 }
     case 'failed': // slow side-to-side wiggle
       return { dx: 0, dy: 0, angle: Math.sin(phase) * 3.5 }
     default:
@@ -101,7 +107,7 @@ async function keyedPose(name) {
   return await sharp(rgba, { raw: { width: KEY_SIZE, height: KEY_SIZE, channels: 4 } }).png().toBuffer()
 }
 
-async function spriteCells(name, count) {
+async function spriteCells(name, count, baseH) {
   const png = await keyedPose(name)
   const img = sharp(png).ensureAlpha()
   const raw = await img.raw().toBuffer({ resolveWithObject: true })
@@ -162,8 +168,7 @@ async function spriteCells(name, count) {
   // Slightly shorter normalized height so every pose keeps head/foot margin
   // inside the 256px cell (the sprites were trimmed flush to the head and
   // feet, so at the top of a jump the head read as clipped).
-  const BASE_H = 188
-  const norm = await trimmed.resize({ height: BASE_H, withoutEnlargement: false }).png().toBuffer()
+  const norm = await trimmed.resize({ height: baseH, withoutEnlargement: false }).png().toBuffer()
   const nm = await sharp(norm).metadata()
   const cells = []
   for (let f = 0; f < count; f++) {
@@ -173,7 +178,7 @@ async function spriteCells(name, count) {
       layer = layer.rotate(tr.angle, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
     }
     const w = Math.max(1, Math.round(nm.width * (tr.scaleX ?? 1)))
-    const h = Math.max(1, Math.round(BASE_H * (tr.scaleY ?? 1)))
+    const h = Math.max(1, Math.round(baseH * (tr.scaleY ?? 1)))
     // Fit "contain": the jump/squash frames change the aspect ratio
     // (scaleX != scaleY), and the default "cover" mode scales up to fill
     // and then CROPS the overflow — chopping the raised hand / head top and
@@ -201,7 +206,7 @@ const composites = []
 for (let r = 0; r < POSES.length; r++) {
   const name = POSES[r]
   const count = FRAMES[r]
-  const { cells } = await spriteCells(name, count)
+  const { cells } = await spriteCells(name, count, BASE_H[name])
   for (let f = 0; f < count; f++) {
     composites.push({
       input: cells[f].input,

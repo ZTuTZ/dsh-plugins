@@ -39,7 +39,7 @@ const GUIDANCE = '本机已安装 dsh-spider-pet 插件：右下角有一只蜘�
  *   turn/start + tool/call → thinking (working), turn/end → done
  *   (celebrate), user/message → waiting, session end → idle.
  */
-type ActivityPhase = 'idle' | 'waiting' | 'thinking' | 'done'
+type ActivityPhase = 'idle' | 'waiting' | 'thinking' | 'done' | 'failed'
 
 /** Host-side pet activity tracker + HTTP surface. */
 export function makePetActivity(ctx: Context): {
@@ -50,14 +50,23 @@ export function makePetActivity(ctx: Context): {
   let phrase: string | undefined
   let turnActive = false
   let celebrateUntil = 0
+  let failedUntil = 0
+  let waitingUntil = 0
   const now = (): number => Date.now()
+  /** How long the waiting pose is held after a user message so it is visible
+   *  even when the model starts responding almost immediately. */
+  const MIN_WAIT_MS = 1200
+  const CELEBRATE_MS = 2400
+  const FAILED_MS = 3000
   const offs = [
     ctx.on('session/event', (_session: Session, event: { type: string; data?: unknown }) => {
       switch (event.type) {
         case 'turn/start':
         case 'step/start':
           turnActive = true
-          phase = 'thinking'
+          // A turn may start right after the user message; keep the waiting
+          // pose until its minimum window passes so the state is visible.
+          if (phase !== 'waiting' || now() >= waitingUntil) phase = 'thinking'
           break
         case 'tool/call': {
           turnActive = true
@@ -74,13 +83,21 @@ export function makePetActivity(ctx: Context): {
           break
         case 'turn/end':
           turnActive = false
-          phase = 'done'
-          celebrateUntil = now() + 2400
           phrase = undefined
+          const data = event.data as { reason?: { kind?: string } | string } | undefined
+          const reason = typeof data?.reason === 'string' ? data.reason : data?.reason?.kind
+          if (reason === 'error') {
+            phase = 'failed'
+            failedUntil = now() + FAILED_MS
+          } else {
+            phase = 'done'
+            celebrateUntil = now() + CELEBRATE_MS
+          }
           break
         case 'user/message':
           turnActive = false
           phase = 'waiting'
+          waitingUntil = now() + MIN_WAIT_MS
           phrase = undefined
           break
       }
@@ -90,12 +107,20 @@ export function makePetActivity(ctx: Context): {
       phase = 'idle'
       phrase = undefined
       celebrateUntil = 0
+      failedUntil = 0
+      waitingUntil = 0
     }),
   ]
   return {
     state: () => {
-      // The celebration window after a turn settles back to idle.
-      if (phase === 'done' && now() >= celebrateUntil) phase = 'idle'
+      const t = now()
+      // A failed turn settles back to waiting (the conversation is still open).
+      if (phase === 'failed' && t >= failedUntil) phase = 'waiting'
+      // The celebration window after a turn settles back to waiting, so the
+      // pet visibly waits between exchanges instead of vanishing into idle.
+      if (phase === 'done' && t >= celebrateUntil) phase = 'waiting'
+      // The minimum waiting window passed and the model is already running.
+      if (phase === 'waiting' && turnActive && t >= waitingUntil) phase = 'thinking'
       return { phase, ...(phrase === undefined ? {} : { phrase }) }
     },
     dispose: () => { for (const off of offs) off() },

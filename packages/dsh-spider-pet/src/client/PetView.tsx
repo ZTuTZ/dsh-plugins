@@ -13,6 +13,8 @@ const FRAME_DURATION_MS: Record<PetAnimation, number> = {
   waiting: 65,
   thinking: 75,
   jumping: 40,
+  pet: 55,
+  failed: 90,
 }
 
 export interface PetViewProps {
@@ -21,6 +23,7 @@ export interface PetViewProps {
   table: FrameTable
   sheetUrl: string
   onInteract: () => void
+  onPetInteract: () => void
   onPanel: () => void
   panelOpen: boolean
   onDrag: (event: React.PointerEvent) => void
@@ -112,6 +115,14 @@ export function PetView(props: PetViewProps): JSX.Element | null {
     bubbleTimer.current = setTimeout(() => setShowBubble(false), 1200)
   }
 
+  // Double-click = petting: dedicated happy pet pose + feedback bubble.
+  const handlePet = (): void => {
+    props.onPetInteract()
+    setShowBubble(true)
+    if (bubbleTimer.current !== undefined) clearTimeout(bubbleTimer.current)
+    bubbleTimer.current = setTimeout(() => setShowBubble(false), 1200)
+  }
+
   // Status bubble (host activity phrase) takes priority over the happy
   // feedback bubble shown right after a pet interaction.
   const bubbleText = snapshot.bubble ?? (showBubble ? '嗷呜～' : undefined)
@@ -148,6 +159,7 @@ export function PetView(props: PetViewProps): JSX.Element | null {
       <canvas
         className={css.petSprite}
         onClick={handleClick}
+        onDoubleClick={handlePet}
         onPointerDown={props.onDrag}
         ref={canvasRef}
       />
