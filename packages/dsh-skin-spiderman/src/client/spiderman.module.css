@@ -484,3 +484,110 @@ body[data-dsh-spiderman] {
   --dsw-specific-tip: rgb(31, 24, 38);
   color: rgb(240, 234, 238);
 }
+
+/* ===== Theme chrome tokens: scrollbars ride the official indirection ===== */
+body[data-dsh-spiderman] {
+  --dsw-alias-scrollbar-bg-l1: rgba(255, 255, 255, 0.06);
+  --dsw-alias-scrollbar-bg-l2: rgba(217, 43, 58, 0.42);
+  --dsw-alias-scrollbar-hover-l1: rgba(217, 43, 58, 0.3);
+  --dsw-alias-scrollbar-hover-l2: rgba(230, 84, 96, 0.62);
+}
+
+/* ===== Chrome details: scrollbars, selection, focus, links ===== */
+body[data-dsh-spiderman]::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+body[data-dsh-spiderman]::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+body[data-dsh-spiderman]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(217, 43, 58, 0.5), rgba(59, 111, 212, 0.5));
+  border: 2px solid rgba(11, 7, 17, 0.9);
+  border-radius: 8px;
+}
+body[data-dsh-spiderman]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(240, 74, 88, 0.65), rgba(107, 147, 228, 0.65));
+}
+body[data-dsh-spiderman]::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+body[data-dsh-spiderman] ::selection {
+  background: rgba(217, 43, 58, 0.85);
+  color: rgb(255, 255, 255);
+}
+body[data-dsh-spiderman] :focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+}
+body[data-dsh-spiderman] a {
+  color: var(--dsw-static-blue-500);
+}
+body[data-dsh-spiderman] a:hover {
+  color: var(--dsw-static-red-500);
+}
+body[data-dsh-spiderman] a:visited {
+  color: var(--dsw-static-blue-600);
+}
+
+/* ===== Workspace (left sidebar column) accents ===== */
+body[data-dsh-spiderman] [class*="sidebarCol"] {
+  background-color: var(--dsw-specific-sidebar-fill);
+  background-image:
+    radial-gradient(120% 70% at 50% 0%, rgba(217, 43, 58, 0.1), transparent 62%),
+    radial-gradient(90% 50% at 100% 100%, rgba(59, 111, 212, 0.08), transparent 60%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(25deg, rgba(217, 43, 58, 0.016) 0 1px, transparent 1px 30px);
+}
+
+body[data-dsh-spiderman] [class*="_newSession"] {
+  border-color: rgba(217, 43, 58, 0.4);
+  background-color: rgba(217, 43, 58, 0.08);
+  background-image: linear-gradient(120deg, rgba(217, 43, 58, 0.14), rgba(59, 111, 212, 0.16));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+body[data-dsh-spiderman] [class*="_newSession"]:hover {
+  border-color: rgba(217, 43, 58, 0.55);
+  background-image: linear-gradient(120deg, rgba(217, 43, 58, 0.22), rgba(59, 111, 212, 0.24));
+}
+/* Keep the collapsed rail icon quiet */
+body[data-dsh-spiderman] [class*="_collapsed"] [class*="_newSession"] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ===== Composer seat: soft red glow above the input ===== */
+body[data-dsh-spiderman] [data-composer-seat] {
+  box-shadow: 0 -14px 30px -22px rgba(217, 43, 58, 0.55);
+}
+
+/* ===== Ambient web overlay (injected by apply(); texture + spider mark) ===== */
+.web {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(25deg, rgba(217, 43, 58, 0.02) 0 1px, transparent 1px 34px);
+}
+.webMark {
+  position: fixed;
+  left: 16px;
+  bottom: 12px;
+  width: 168px;
+  height: 94px;
+  opacity: 0.08;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  filter: drop-shadow(0 0 14px rgba(217, 43, 58, 0.45));
+  pointer-events: none;
+}
+@media (max-width: 760px) {
+  .webMark {
+    display: none;
+  }
+}

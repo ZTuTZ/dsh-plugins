@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { PETER_URL, SUIT_URL } from '../assets/reveal.ts'
+import { SPIDER_MARK_URL } from '../assets/mark.ts'
 import { mountReveal } from './reveal.ts'
 import css from './spiderman.module.css'
 
@@ -35,11 +36,21 @@ export function apply(ctx: Context): void {
         chrome.className = cls('chrome')
         document.body.appendChild(chrome)
 
+        const web = document.createElement('div')
+        web.dataset.dshSpidermanWeb = ''
+        web.className = cls('web')
+        const mark = document.createElement('div')
+        mark.className = cls('webMark')
+        mark.style.backgroundImage = `url(${SPIDER_MARK_URL})`
+        web.appendChild(mark)
+        document.body.appendChild(web)
+
         const disposers: Array<() => void> = []
         disposers.push(mountReveal({ peter: PETER_URL, suit: SUIT_URL }))
 
         return () => {
           chrome.remove()
+          web.remove()
           delete document.body.dataset.dshSpiderman
           for (const dispose of disposers.splice(0)) dispose()
         }
