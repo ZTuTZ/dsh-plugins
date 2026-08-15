@@ -1,10 +1,24 @@
 /* Spider-Man red-blue theme for the dsh web GUI.
-   All rules are scoped under body[data-dsh-spiderman]; the theme overrides
+   All rules are scoped under body[data-dsh-marvel-skin="spiderman"]; the theme overrides
    the official design tokens (--dsw-static-* / --dsw-alias-* /
    --dsw-specific-*) so every official component picks up the red-blue look. */
 
+/* ===== Hero accent palette =====
+   Per selected hero; spiderman is the classic red/blue pair. New heroes
+   define their own `--hero-*` values (and their own --dsw-* token blocks)
+   under body[data-dsh-marvel-skin="<id>"]. */
+body[data-dsh-marvel-skin="spiderman"] {
+  --hero-a: rgb(217, 43, 58);
+  --hero-a-hi: rgb(240, 74, 88);
+  --hero-b: rgb(59, 111, 212);
+  --hero-b-hi: rgb(107, 147, 228);
+  --hero-ink: rgb(240, 234, 238);
+  --hero-bg: rgb(12, 8, 16);
+  --hero-bg-deep: rgb(10, 6, 14);
+}
+
 /* ===== Light theme ===== */
-body[data-dsh-spiderman] {
+body[data-dsh-marvel-skin="spiderman"] {
   --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
   --ds-font-family-code: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   color: #1a1418;
@@ -17,7 +31,7 @@ body[data-dsh-spiderman] {
 }
 
 /* ===== Static palette: light ===== */
-body[data-dsh-spiderman] {
+body[data-dsh-marvel-skin="spiderman"] {
   --dsw-static-blue-100: rgb(220, 233, 250);
   --dsw-static-blue-300: rgb(163, 195, 239);
   --dsw-static-blue-400: rgb(127, 169, 230);
@@ -88,7 +102,7 @@ body[data-dsh-spiderman] {
 }
 
 /* ===== Alias tokens: light ===== */
-body[data-dsh-spiderman] {
+body[data-dsh-marvel-skin="spiderman"] {
   --dsw-alias-bg-base: rgb(251, 252, 254);
   --dsw-alias-bg-layer-1: rgb(242, 244, 249);
   --dsw-alias-bg-layer-2: rgb(233, 237, 245);
@@ -150,7 +164,7 @@ body[data-dsh-spiderman] {
 }
 
 /* ===== Specific tokens: light ===== */
-body[data-dsh-spiderman] {
+body[data-dsh-marvel-skin="spiderman"] {
   --dsw-specific-bubble-highlight: rgb(246, 231, 233);
   --dsw-specific-bubble: rgb(251, 220, 221);
   --dsw-specific-input-major: rgb(255, 255, 255);
@@ -165,7 +179,7 @@ body[data-dsh-spiderman] {
 }
 
 /* ===== Dark theme ===== */
-body[data-dsh-spiderman][data-ds-dark-theme] {
+body[data-dsh-marvel-skin="spiderman"][data-ds-dark-theme] {
   color: rgb(240, 234, 238);
   background-color: rgb(12, 8, 16);
   background-image:
@@ -175,7 +189,7 @@ body[data-dsh-spiderman][data-ds-dark-theme] {
     linear-gradient(160deg, rgb(18, 12, 24) 0%, rgb(22, 14, 28) 55%, rgb(12, 8, 16) 100%);
 }
 
-body[data-dsh-spiderman][data-ds-dark-theme] {
+body[data-dsh-marvel-skin="spiderman"][data-ds-dark-theme] {
   --dsw-static-deepseek-100: rgb(92, 26, 32);
   --dsw-static-deepseek-200: rgb(120, 26, 33);
   --dsw-static-deepseek-300: rgb(150, 32, 40);
@@ -242,7 +256,7 @@ body[data-dsh-spiderman][data-ds-dark-theme] {
   --dsw-static-red-900: rgb(251, 216, 211);
 }
 
-body[data-dsh-spiderman][data-ds-dark-theme] {
+body[data-dsh-marvel-skin="spiderman"][data-ds-dark-theme] {
   --dsw-alias-bg-base: rgb(20, 15, 26);
   --dsw-alias-bg-layer-1: rgb(28, 22, 34);
   --dsw-alias-bg-layer-2: rgb(34, 27, 40);
@@ -303,7 +317,7 @@ body[data-dsh-spiderman][data-ds-dark-theme] {
   --dsw-alias-markdown-placeholder: rgba(217, 43, 58, 0.5);
 }
 
-body[data-dsh-spiderman][data-ds-dark-theme] {
+body[data-dsh-marvel-skin="spiderman"][data-ds-dark-theme] {
   --dsw-specific-bubble-highlight: rgb(60, 26, 31);
   --dsw-specific-bubble: rgb(48, 22, 26);
   --dsw-specific-input-major: rgb(24, 19, 30);
@@ -318,11 +332,11 @@ body[data-dsh-spiderman][data-ds-dark-theme] {
 }
 
 /* ===== Surface: keep the background art under the conversation content ===== */
-body[data-dsh-spiderman] [data-dsh-spiderman-reveal] {
+body[data-dsh-marvel-skin="spiderman"] [data-dsh-spiderman-reveal] {
   z-index: 0;
 }
 
-body[data-dsh-spiderman] .chrome {
+body[data-dsh-marvel-skin="spiderman"] .chrome {
   position: fixed;
   inset: 0;
   z-index: 2;
@@ -336,15 +350,15 @@ body[data-dsh-spiderman] .chrome {
    the dark skin sets to a light ink — and the plate text's inverted token can
    be overridden by official theme CSS loaded later. Fix both explicitly so
    the badge is always a legible red plate with white text. */
-body[data-dsh-spiderman] svg rect[x="129.348"] {
+body[data-dsh-marvel-skin="spiderman"] svg rect[x="129.348"] {
   fill: rgb(217, 43, 58);
 }
-body[data-dsh-spiderman] svg g[clip-path*="badge"] path {
+body[data-dsh-marvel-skin="spiderman"] svg g[clip-path*="badge"] path {
   fill: rgb(255, 255, 255);
 }
 
 /* ===== Force the dark cinematic look regardless of the OS theme ===== */
-body[data-dsh-spiderman] {
+body[data-dsh-marvel-skin="spiderman"] {
   /* Static palette must be dark too: the light block above keeps these as
      near-white, so any official component painting with a static token (e.g.
      the header title behind the logo) rendered as a white box with light text
@@ -486,7 +500,7 @@ body[data-dsh-spiderman] {
 }
 
 /* ===== Theme chrome tokens: scrollbars ride the official indirection ===== */
-body[data-dsh-spiderman] {
+body[data-dsh-marvel-skin="spiderman"] {
   --dsw-alias-scrollbar-bg-l1: rgba(255, 255, 255, 0.06);
   --dsw-alias-scrollbar-bg-l2: rgba(217, 43, 58, 0.42);
   --dsw-alias-scrollbar-hover-l1: rgba(217, 43, 58, 0.3);
@@ -494,40 +508,40 @@ body[data-dsh-spiderman] {
 }
 
 /* ===== Chrome details: scrollbars, selection, focus, links ===== */
-body[data-dsh-spiderman]::-webkit-scrollbar {
+body[data-dsh-marvel-skin="spiderman"]::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
-body[data-dsh-spiderman]::-webkit-scrollbar-track {
+body[data-dsh-marvel-skin="spiderman"]::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.04);
 }
-body[data-dsh-spiderman]::-webkit-scrollbar-thumb {
+body[data-dsh-marvel-skin="spiderman"]::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, rgba(217, 43, 58, 0.5), rgba(59, 111, 212, 0.5));
   border: 2px solid rgba(11, 7, 17, 0.9);
   border-radius: 8px;
 }
-body[data-dsh-spiderman]::-webkit-scrollbar-thumb:hover {
+body[data-dsh-marvel-skin="spiderman"]::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, rgba(240, 74, 88, 0.65), rgba(107, 147, 228, 0.65));
 }
-body[data-dsh-spiderman]::-webkit-scrollbar-corner {
+body[data-dsh-marvel-skin="spiderman"]::-webkit-scrollbar-corner {
   background: transparent;
 }
 
-body[data-dsh-spiderman] ::selection {
+body[data-dsh-marvel-skin="spiderman"] ::selection {
   background: rgba(217, 43, 58, 0.85);
   color: rgb(255, 255, 255);
 }
-body[data-dsh-spiderman] :focus-visible {
+body[data-dsh-marvel-skin="spiderman"] :focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary);
   outline-offset: 2px;
 }
-body[data-dsh-spiderman] a {
+body[data-dsh-marvel-skin="spiderman"] a {
   color: var(--dsw-static-blue-500);
 }
-body[data-dsh-spiderman] a:hover {
+body[data-dsh-marvel-skin="spiderman"] a:hover {
   color: var(--dsw-static-red-500);
 }
-body[data-dsh-spiderman] a:visited {
+body[data-dsh-marvel-skin="spiderman"] a:visited {
   color: var(--dsw-static-blue-600);
 }
 
@@ -535,46 +549,46 @@ body[data-dsh-spiderman] a:visited {
    The suit-texture backdrop (texture + dark scrim + red/blue ambient glows)
    is applied from apply() as an inline background-image so it can reference
    the inlined data URL; this rule only keeps the color fallback. */
-body[data-dsh-spiderman] [class*="sidebarCol"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="sidebarCol"] {
   background-color: var(--dsw-specific-sidebar-fill);
 }
 
 /* ===== Session list: glass rows, red edge glow on the active one ===== */
-body[data-dsh-spiderman] [role="treeitem"] {
+body[data-dsh-marvel-skin="spiderman"] [role="treeitem"] {
   border-radius: 10px;
   background: rgba(28, 21, 35, 0.4);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
-body[data-dsh-spiderman] [role="treeitem"]:hover {
+body[data-dsh-marvel-skin="spiderman"] [role="treeitem"]:hover {
   background: rgba(217, 43, 58, 0.08);
   box-shadow: inset 0 0 0 1px rgba(217, 43, 58, 0.18);
 }
-body[data-dsh-spiderman] [role="treeitem"][aria-selected="true"] {
+body[data-dsh-marvel-skin="spiderman"] [role="treeitem"][aria-selected="true"] {
   background: linear-gradient(120deg, rgba(217, 43, 58, 0.22), rgba(59, 111, 212, 0.12) 80%);
   box-shadow:
     inset 0 0 0 1px rgba(217, 43, 58, 0.5),
     0 6px 18px rgba(217, 43, 58, 0.18);
 }
 
-body[data-dsh-spiderman] [class*="_newSession"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="_newSession"] {
   border-color: rgba(217, 43, 58, 0.42);
   background-color: rgba(217, 43, 58, 0.14);
   background-image: linear-gradient(120deg, rgba(217, 43, 58, 0.24), rgba(59, 111, 212, 0.2));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 14px rgba(217, 43, 58, 0.16);
 }
-body[data-dsh-spiderman] [class*="_newSession"]:hover {
+body[data-dsh-marvel-skin="spiderman"] [class*="_newSession"]:hover {
   border-color: rgba(217, 43, 58, 0.6);
   background-image: linear-gradient(120deg, rgba(217, 43, 58, 0.34), rgba(59, 111, 212, 0.28));
 }
 /* Keep the collapsed rail icon quiet */
-body[data-dsh-spiderman] [class*="_collapsed"] [class*="_newSession"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="_collapsed"] [class*="_newSession"] {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
 }
 
 /* ===== Composer seat: soft red glow above the input ===== */
-body[data-dsh-spiderman] [data-composer-seat] {
+body[data-dsh-marvel-skin="spiderman"] [data-composer-seat] {
   box-shadow: 0 -14px 30px -22px rgba(217, 43, 58, 0.55);
 }
 
@@ -588,7 +602,7 @@ body[data-dsh-spiderman] [data-composer-seat] {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.22em;
-  color: rgb(240, 74, 88);
+  color: var(--hero-a-hi);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -623,8 +637,8 @@ body[data-dsh-spiderman] [data-composer-seat] {
   flex: none;
 }
 /* Hide injected chrome when the sidebar collapses to the icon rail */
-body[data-dsh-spiderman] [class*="_collapsed"] [class*="sidebarKicker"],
-body[data-dsh-spiderman] [class*="_collapsed"] [class*="sidebarStatus"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="_collapsed"] [class*="sidebarKicker"],
+body[data-dsh-marvel-skin="spiderman"] [class*="_collapsed"] [class*="sidebarStatus"] {
   display: none;
 }
 
@@ -661,13 +675,13 @@ body[data-dsh-spiderman] [class*="_collapsed"] [class*="sidebarStatus"] {
    VOzbGW_* are the settings-shell classes of the current web profile
    (0.1.0-rc.6); if a future dsh version renames them, these rules degrade
    gracefully to the token-only look. */
-body[data-dsh-spiderman] [class*="VOzbGW_panel"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="VOzbGW_panel"] {
   box-shadow:
     0 0 0 1px rgba(217, 43, 58, 0.2),
     0 0 46px rgba(217, 43, 58, 0.14),
     var(--dsw-shadow-lv3);
 }
-body[data-dsh-spiderman] [class*="VOzbGW_panel"]::before {
+body[data-dsh-marvel-skin="spiderman"] [class*="VOzbGW_panel"]::before {
   content: "";
   position: absolute;
   top: 0;
@@ -678,40 +692,40 @@ body[data-dsh-spiderman] [class*="VOzbGW_panel"]::before {
   pointer-events: none;
   background: linear-gradient(90deg, var(--dsw-static-deepseek-500), var(--dsw-static-blue-500));
 }
-body[data-dsh-spiderman] [class*="VOzbGW_mask"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="VOzbGW_mask"] {
   background: linear-gradient(160deg, rgba(23, 15, 29, 0.6), rgba(10, 6, 14, 0.55));
 }
-body[data-dsh-spiderman] [class*="VOzbGW_navCell"]:hover {
+body[data-dsh-marvel-skin="spiderman"] [class*="VOzbGW_navCell"]:hover {
   background: linear-gradient(90deg, rgba(217, 43, 58, 0.12), rgba(59, 111, 212, 0.08));
 }
-body[data-dsh-spiderman] [class*="VOzbGW_navCell"][class*="VOzbGW_active"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="VOzbGW_navCell"][class*="VOzbGW_active"] {
   background: linear-gradient(90deg, rgba(217, 43, 58, 0.2), rgba(59, 111, 212, 0.1));
   box-shadow: inset 3px 0 0 var(--dsw-alias-brand-primary);
 }
 
 /* ===== Plugin inventory: sub-tabs + cards ===== */
-body[data-dsh-spiderman] [class*="pbvGtq_tab"][data-active="true"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="pbvGtq_tab"][data-active="true"] {
   color: var(--dsw-alias-brand-primary);
 }
-body[data-dsh-spiderman] [class*="pbvGtq_tab"][data-active="true"]:after {
+body[data-dsh-marvel-skin="spiderman"] [class*="pbvGtq_tab"][data-active="true"]:after {
   background: var(--dsw-alias-brand-primary);
 }
-body[data-dsh-spiderman] [class*="YyYd_a_card"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="YyYd_a_card"] {
   background: linear-gradient(120deg, rgba(31, 24, 38, 0.92), rgba(24, 18, 31, 0.95));
   border-color: rgba(217, 43, 58, 0.16);
   transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
 }
-body[data-dsh-spiderman] [class*="YyYd_a_card"]:hover {
+body[data-dsh-marvel-skin="spiderman"] [class*="YyYd_a_card"]:hover {
   border-color: rgba(217, 43, 58, 0.42);
   box-shadow: 0 4px 18px rgba(217, 43, 58, 0.12);
 }
-body[data-dsh-spiderman] [class*="YyYd_a_cardOpen"] {
+body[data-dsh-marvel-skin="spiderman"] [class*="YyYd_a_cardOpen"] {
   border-color: rgba(217, 43, 58, 0.35);
   box-shadow: 0 0 0 1px rgba(59, 111, 212, 0.14), 0 6px 22px rgba(217, 43, 58, 0.1);
 }
 
 /* ===== Spider-app settings row: compact row + mark slot (mark injected) ===== */
-body[data-dsh-spiderman] [data-dsh-spider-pet-settings] {
+body[data-dsh-marvel-skin="spiderman"] [data-dsh-spider-pet-settings] {
   display: flex;
   align-items: center;
   gap: 10px;

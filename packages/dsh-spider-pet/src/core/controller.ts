@@ -20,7 +20,9 @@ export const APP_STORAGE_KEY = 'dsh.spiderApp.v1'
 export const APP_TOGGLE_EVENT = 'dsh:spider-app-toggle'
 
 export const defaultPersist: PetPersist = {
-  display: { visible: true, size: 160, right: 24, bottom: 20, name: 'Peter Parker' },
+  // The pet name is fixed per hero (the rename feature was removed); the
+  // controller fills it in from the selected hero content at construction.
+  display: { visible: true, size: 160, right: 24, bottom: 20, name: '' },
 }
 
 export function loadPersist(
@@ -87,9 +89,16 @@ export class PetController {
   private readonly jumpWindowMs = 1600
   private readonly petWindowMs = 1600
 
-  constructor(private readonly deps: PetControllerDeps) {
+  constructor(
+    private readonly deps: PetControllerDeps,
+    /** Fixed pet display name from the selected hero content. */
+    name: string,
+  ) {
     this.now = deps.now ?? (() => Date.now())
-    this.persist = loadPersist(deps.storage, defaultPersist)
+    this.persist = loadPersist(deps.storage, {
+      ...defaultPersist,
+      display: { ...defaultPersist.display, name },
+    })
     this.appEnabled = readAppEnabled(deps.storage)
   }
 

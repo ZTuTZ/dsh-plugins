@@ -41,6 +41,38 @@
 - 设置弹框的大背景图 / 毛玻璃装饰（portal 到 body 的高密度功能界面，官方皮肤警告 blur 会困住内部弹层）。
 - 任何对话区流体效果改动。
 
+## 追加：漫威英雄架构（v0.2 阶段一 + 二）
+
+### 目标
+
+把皮肤与桌宠从“单英雄写死”升级为**运行时 + 英雄内容数据**，让后续英雄（钢铁侠、美国队长…）只填内容即可接入，并支持设置里独立组合皮肤与桌宠。
+
+### 协议（两个插件各自持有一份等价常量，客户端纯度门禁禁止跨包导入）
+
+- `dsh.marvel.v1` = `{ skin, pet }` 选择存储；默认均为 `spiderman`
+- `dsh:marvel-skin-change` / `dsh:marvel-pet-change` 切换事件；跨标签页用 storage 事件同步
+- 总开关沿用 `dsh.spiderApp.v1` + `dsh:spider-app-toggle`，行为不变
+
+### 桌宠侧（dsh-spider-pet）
+
+- `core/content.ts`：`HeroPetContent`（id/label/name/spriteUrl/meta/table）
+- `heroes/spiderman.ts`：蜘蛛侠内容（原精灵图与帧表迁入）；`HERO_PETS` 注册表，未知 id 回退蜘蛛侠
+- `PetController` 构造函数接收英雄名（默认文案不再写死 Peter Parker）
+- 设置 tab 升级为「漫威」控制中心（`MarvelSettingsTab`）：总开关 + 桌宠选择 + 皮肤选择；切换时写存储、广播事件
+- 桌宠热切换：监听 pet 事件/存储，替换精灵图、帧表与名字，位置与大小保留
+
+### 皮肤侧（dsh-skin-spiderman）
+
+- `core/theme.ts`：`HeroSkinContent`（id/label/kicker/statusName/markUrl/textureUrl/figures）
+- `themes/spiderman.ts`：蜘蛛侠主题内容；`HERO_SKINS` 注册表，未知 id 回退蜘蛛侠
+- 全部 CSS 作用域由 `body[data-dsh-spiderman]` 改为 `body[data-dsh-marvel-skin="spiderman"]`，并新增 `--hero-*` 变量块；新英雄 = 新作用域块 + 主题内容
+- 侧栏 kicker/状态名、徽标、纹理、流体图层均从主题内容读取；皮肤切换时整体卸载重挂
+
+### 后续阶段
+
+- 阶段三：钢铁侠（战甲着装背景交互 + Q 版桌宠 + 设置项）验证完整内容流程
+- 阶段四：美国队长；素材按需加载
+
 ## 验证
 
 - `pnpm build`（tsc + tsdown）通过。

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PetController, defaultPersist, loadPersist } from '../src/core/controller.ts'
 
-const fallback = defaultPersist
+const fallback = { ...defaultPersist, display: { ...defaultPersist.display, name: 'Peter Parker' } }
 
 function memoryStorage(initial?: string): Storage {
   let value = initial ?? null
@@ -32,7 +32,7 @@ describe('loadPersist', () => {
 describe('PetController', () => {
   it('triggers the pet animation for a window and notifies', () => {
     let now = 0
-    const controller = new PetController({ storage: memoryStorage(), now: () => now })
+    const controller = new PetController({ storage: memoryStorage(), now: () => now }, 'Peter Parker')
     const events: string[] = []
     controller.subscribe(() => events.push('change'))
     controller.interact()
@@ -44,7 +44,7 @@ describe('PetController', () => {
 
   it('triggers the pet pose for a window after petting', () => {
     let now = 0
-    const controller = new PetController({ storage: memoryStorage(), now: () => now })
+    const controller = new PetController({ storage: memoryStorage(), now: () => now }, 'Peter Parker')
     controller.interactPet()
     expect(controller.getSnapshot().animation).toBe('pet')
     now = 2000
@@ -52,7 +52,7 @@ describe('PetController', () => {
   })
 
   it('maps activity to animation', () => {
-    const controller = new PetController({ storage: memoryStorage(), now: () => 0 })
+    const controller = new PetController({ storage: memoryStorage(), now: () => 0 }, 'Peter Parker')
     expect(controller.getSnapshot().animation).toBe('idle')
     controller.setActivity('waiting')
     expect(controller.getSnapshot().animation).toBe('waiting')
@@ -65,7 +65,7 @@ describe('PetController', () => {
   })
 
   it('carries and clears a status bubble', () => {
-    const controller = new PetController({ storage: memoryStorage(), now: () => 0 })
+    const controller = new PetController({ storage: memoryStorage(), now: () => 0 }, 'Peter Parker')
     expect(controller.getSnapshot().bubble).toBeUndefined()
     controller.setActivity('thinking', '正在调用工具…')
     expect(controller.getSnapshot().bubble).toBe('正在调用工具…')

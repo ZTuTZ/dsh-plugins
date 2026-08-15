@@ -3,24 +3,22 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { APP_STORAGE_KEY, APP_TOGGLE_EVENT, PetController, readAppEnabled } from '../core/controller.ts'
+import {
+  MARVEL_PET_EVENT,
+  MARVEL_STORAGE_KEY,
+  readMarvelSelections,
+} from '../core/marvel.ts'
 import type { PetActivity } from '../core/state.ts'
-import type { FrameTable } from '../core/spritesheet.ts'
-import { SPRITE_SHEET_URL } from '../assets/spritesheet.ts'
+import type { HeroPetContent } from '../core/content.ts'
+import { HERO_PETS } from '../heroes/spiderman.ts'
 import { mountPet } from './mount.tsx'
+import { MarvelSettingsTab } from './MarvelSettingsTab.tsx'
 import { PluginSettingsCard } from './PluginSettingsCard.tsx'
-import { SpiderAppTab } from './SpiderAppTab.tsx'
-import { en, zh, type PetLocaleKey } from './locales.ts'
+import { zh, en, type PetLocaleKey } from './locales.ts'
 
 export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope']
 
 const NS = 'spider-pet'
-
-export const SPRITE_META = { framesPerRow: 16, cellWidth: 256, cellHeight: 256 } as const
-
-export const FRAME_TABLE: FrameTable = {
-  rows: { idle: 0, waiting: 1, thinking: 2, jumping: 3, pet: 4, failed: 5 },
-  frames: [16, 12, 12, 12, 12, 12],
-}
 
 /** Host `activity/status` phase → pet activity (`tool` shares the thinking row). */
 const PHASE_MAP: Record<string, PetActivity> = {
@@ -55,17 +53,20 @@ export function apply(ctx: ClientContext): void {
 
   const storage = typeof localStorage !== 'undefined' ? localStorage : undefined
   if (storage === undefined) return
-  const controller = new PetController({ storage })
+  const initial = readMarvelSelections(storage)
+  const initialContent = HERO_PETS[initial.pet] ?? HERO_PETS.spiderman
+  const controller = new PetController({ storage }, initialContent.name)
 
-  // One tab inside the official Plugins settings page: the spider-app switch.
+  // One tab inside the official Plugins settings page: the Marvel control
+  // center (master switch + pet picker + skin picker).
   ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
     name: 'settings.plugins.tab',
-    id: 'spider-app',
+    id: 'marvel-app',
     order: 30,
-    label: () => '蜘蛛侠',
+    label: () => '漫威',
     locale: NS,
     inject: () => ({}),
-  }, SpiderAppTab))
+  }, MarvelSettingsTab))
 
   ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
     name: 'web-ui.plugin.item',
@@ -76,45 +77,72 @@ export function apply(ctx: ClientContext): void {
   }, PluginSettingsCard))
 
   const settingsScope = ctx.settingsScope.bind<{ enabled?: boolean }>({ namespace: 'spider-pet' })
-  let disposer: (() => void) | undefined
+  let petMount: (() => void) | undefined
   let pollTimer: number | undefined
+  let lastPetId = initial.pet
+
+  const currentContent = (): HeroPetContent => {
+    const selections = readMarvelSelections(storage)
+    return HERO_PETS[selections.pet] ?? HERO_PETS.spiderman
+  }
+
+  const stopPet = (): void => {
+    petMount?.()
+    petMount = undefined
+    if (pollTimer !== undefined) {
+      window.clearInterval(pollTimer)
+      pollTimer = undefined
+    }
+  }
+
+  const startPet = (): void => {
+    const content = currentContent()
+    lastPetId = content.id
+    controller.setDisplay({ name: content.name })
+    petMount = mountPet(controller, content.meta, content.table, content.spriteUrl)
+    const poll = (): void => {
+      fetch(ACTIVITY_STATE_URL)
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status ${res.status}`))))
+        .then((state: { phase?: string; phrase?: string; line?: string }) => {
+          const activity = state.phase === undefined ? undefined : PHASE_MAP[state.phase]
+          if (activity === undefined) return
+          let bubble = state.phrase ?? state.line ?? undefined
+          // Working without a tool call has no host phrase; show a default
+          // status bubble so the pet always says what it is doing.
+          if (activity === 'thinking' && bubble === undefined) bubble = '正在思考…'
+          controller.setActivity(activity, bubble)
+        })
+        .catch(() => {
+          // Host API unavailable (plugin toggled off / server restarted):
+          // the pet keeps its last known animation; next poll resyncs.
+        })
+    }
+    poll()
+    pollTimer = window.setInterval(poll, POLL_MS)
+  }
+
   const syncEnabled = (): void => {
     const enabled = controller.getAppEnabled()
     if (enabled) {
-      if (disposer !== undefined) return
+      if (petMount !== undefined || pollTimer !== undefined) return
       try {
-        disposer = mountPet(controller, SPRITE_META, FRAME_TABLE, SPRITE_SHEET_URL)
-        const poll = (): void => {
-          fetch(ACTIVITY_STATE_URL)
-            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status ${res.status}`))))
-            .then((state: { phase?: string; phrase?: string; line?: string }) => {
-              const activity = state.phase === undefined ? undefined : PHASE_MAP[state.phase]
-              if (activity === undefined) return
-              let bubble = state.phrase ?? state.line ?? undefined
-              // Working without a tool call has no host phrase; show a
-              // default status bubble so the pet always says what it is doing.
-              if (activity === 'thinking' && bubble === undefined) bubble = '正在思考…'
-              controller.setActivity(activity, bubble)
-            })
-            .catch(() => {
-              // Host API unavailable (plugin toggled off / server restarted):
-              // the pet keeps its last known animation; next poll resyncs.
-            })
-        }
-        poll()
-        pollTimer = window.setInterval(poll, POLL_MS)
+        startPet()
       } catch (error) {
         console.error('[dsh-spider-pet] mount failed:', error)
       }
     } else {
-      disposer?.()
-      disposer = undefined
-      if (pollTimer !== undefined) {
-        window.clearInterval(pollTimer)
-        pollTimer = undefined
-      }
+      stopPet()
     }
   }
+
+  /** Pet selection changed: swap sprite/frames/name without losing position. */
+  const resyncPet = (): void => {
+    const next = readMarvelSelections(storage).pet
+    if (next === lastPetId || !controller.getAppEnabled()) return
+    stopPet()
+    startPet()
+  }
+
   const unsubscribe = controller.subscribe(syncEnabled)
   // Keep in sync with a toggle from another tab or the skin plugin.
   const onAppToggle = (event: Event): void => {
@@ -123,11 +151,18 @@ export function apply(ctx: ClientContext): void {
       controller.setAppEnabled(enabled)
     }
   }
+  const onPetChange = (event: Event): void => {
+    const id = (event as CustomEvent<{ id?: string }>).detail?.id
+    if (typeof id === 'string') resyncPet()
+  }
   window.addEventListener(APP_TOGGLE_EVENT, onAppToggle)
+  window.addEventListener(MARVEL_PET_EVENT, onPetChange)
   window.addEventListener('storage', (event) => {
     if (event.key === APP_STORAGE_KEY) {
       const enabled = readAppEnabled(localStorage)
       if (enabled !== controller.getAppEnabled()) controller.setAppEnabled(enabled)
+    } else if (event.key === MARVEL_STORAGE_KEY) {
+      resyncPet()
     }
   })
   syncEnabled()

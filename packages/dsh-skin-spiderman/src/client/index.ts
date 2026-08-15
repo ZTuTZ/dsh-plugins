@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { PETER_URL, SUIT_URL } from '../assets/reveal.ts'
-import { SPIDER_MARK_URL } from '../assets/mark.ts'
-import { SUIT_TEXTURE_URL } from '../assets/texture.ts'
+import { MARVEL_SKIN_EVENT, MARVEL_STORAGE_KEY, readMarvelSelections } from '../core/marvel.ts'
+import type { HeroSkinContent } from '../core/theme.ts'
+import { HERO_SKINS } from '../themes/spiderman.ts'
 import { mountReveal } from './reveal.ts'
 import css from './spiderman.module.css'
 
@@ -29,24 +29,21 @@ const SIDEBAR_SELECTOR = '[class*="sidebarCol"]'
 const REGION_SELECTOR = '[class*="_regionArea"]'
 const FOOT_SELECTOR = '[class*="_footArea"]'
 
-/** Suit-texture backdrop for the workspace column: texture on the bottom,
- *  dark scrim for text readability, red/blue ambient glows on top. */
-const SIDEBAR_BACKDROP = [
-  'radial-gradient(120% 70% at 50% 0%, rgba(217, 43, 58, 0.18), transparent 62%)',
-  'radial-gradient(90% 50% at 100% 100%, rgba(59, 111, 212, 0.12), transparent 60%)',
-  'linear-gradient(rgba(10, 6, 14, 0.8), rgba(10, 6, 14, 0.9))',
-  `url(${SUIT_TEXTURE_URL})`,
-].join(', ')
-
 /**
- * Workspace chrome for the skin: suit-texture backdrop plus a comic kicker
- * ("SPIDER-MAN / WORKSPACE" with the spider emblem) above the session list
- * and a "Peter Parker · 在线" status row above the sidebar footer. Every
- * write is retracted on dispose.
+ * Workspace chrome for the active skin hero: suit-texture backdrop plus a
+ * comic kicker (with the hero emblem) above the session list and a
+ * "«name» · 在线" status row above the sidebar footer. Every write is
+ * retracted on dispose.
  */
-function mountSidebarChrome(): () => void {
+function mountSidebarChrome(theme: HeroSkinContent): () => void {
   let mounted = false
   let cleanup: (() => void) | undefined
+  const backdrop = [
+    'radial-gradient(120% 70% at 50% 0%, rgba(217, 43, 58, 0.18), transparent 62%)',
+    'radial-gradient(90% 50% at 100% 100%, rgba(59, 111, 212, 0.12), transparent 60%)',
+    'linear-gradient(rgba(10, 6, 14, 0.8), rgba(10, 6, 14, 0.9))',
+    `url(${theme.textureUrl})`,
+  ].join(', ')
   const tryMount = (): void => {
     if (mounted) return
     const sidebar = document.querySelector<HTMLElement>(SIDEBAR_SELECTOR)
@@ -58,7 +55,7 @@ function mountSidebarChrome(): () => void {
     for (const prop of ['background-image', 'background-size', 'background-repeat'] as const) {
       previous.set(prop, sidebar.style.getPropertyValue(prop))
     }
-    sidebar.style.setProperty('background-image', SIDEBAR_BACKDROP)
+    sidebar.style.setProperty('background-image', backdrop)
     sidebar.style.setProperty('background-size', 'cover, cover, cover, cover')
     sidebar.style.setProperty('background-repeat', 'no-repeat, no-repeat, repeat, no-repeat')
 
@@ -67,10 +64,10 @@ function mountSidebarChrome(): () => void {
     kicker.dataset.dshSidebarKicker = ''
     const mark = document.createElement('span')
     mark.className = cls('sidebarKickerMark')
-    mark.style.backgroundImage = `url(${SPIDER_MARK_URL})`
+    mark.style.backgroundImage = `url(${theme.markUrl})`
     mark.setAttribute('aria-hidden', 'true')
     kicker.appendChild(mark)
-    kicker.appendChild(document.createTextNode('Spider-Man / Workspace'))
+    kicker.appendChild(document.createTextNode(theme.kicker))
     region.before(kicker)
 
     const status = document.createElement('div')
@@ -80,7 +77,7 @@ function mountSidebarChrome(): () => void {
     dot.className = cls('sidebarStatusDot')
     dot.setAttribute('aria-hidden', 'true')
     status.appendChild(dot)
-    status.appendChild(document.createTextNode('Peter Parker · 在线'))
+    status.appendChild(document.createTextNode(`${theme.statusName} · 在线`))
     foot.before(status)
 
     mounted = true
@@ -103,18 +100,18 @@ function mountSidebarChrome(): () => void {
   }
 }
 
-/** Spider-mark preview inside the spider-app settings card (the card mounts
+/** Hero-emblem preview inside the spider-app settings card (the card mounts
  *  lazily when the settings dialog opens, so watch for it). */
 const SETTINGS_ROW_SELECTOR = '[data-dsh-spider-pet-settings]'
 
-function mountSettingsMark(): () => void {
+function mountSettingsMark(markUrl: string): () => void {
   const marks = new Map<Element, HTMLElement>()
   const tryMount = (): void => {
     for (const row of document.querySelectorAll<HTMLElement>(SETTINGS_ROW_SELECTOR)) {
       if (marks.has(row)) continue
       const mark = document.createElement('span')
       mark.className = cls('settingsMark')
-      mark.style.backgroundImage = `url(${SPIDER_MARK_URL})`
+      mark.style.backgroundImage = `url(${markUrl})`
       mark.setAttribute('aria-hidden', 'true')
       row.prepend(mark)
       marks.set(row, mark)
@@ -132,51 +129,59 @@ function mountSettingsMark(): () => void {
 
 export function apply(ctx: Context): void {
   let disposer: (() => void) | undefined
+  let activeSkinId = ''
+
   const sync = (): void => {
     const enabled = readAppEnabled()
-    if (enabled) {
-      if (disposer !== undefined) return
-      disposer = ctx.effect(() => {
-        document.body.dataset.dshSpiderman = ''
-
-        const chrome = document.createElement('div')
-        chrome.dataset.dshSpidermanChrome = ''
-        chrome.className = cls('chrome')
-        document.body.appendChild(chrome)
-
-        const web = document.createElement('div')
-        web.dataset.dshSpidermanWeb = ''
-        web.className = cls('web')
-        const mark = document.createElement('div')
-        mark.className = cls('webMark')
-        mark.style.backgroundImage = `url(${SPIDER_MARK_URL})`
-        web.appendChild(mark)
-        document.body.appendChild(web)
-
-        const disposers: Array<() => void> = []
-        disposers.push(mountReveal({ peter: PETER_URL, suit: SUIT_URL }))
-        disposers.push(mountSidebarChrome())
-        disposers.push(mountSettingsMark())
-
-        return () => {
-          chrome.remove()
-          web.remove()
-          delete document.body.dataset.dshSpiderman
-          for (const dispose of disposers.splice(0)) dispose()
-        }
-      }, 'ui-skin-spiderman: theme')
-    } else {
+    const theme = HERO_SKINS[readMarvelSelections(localStorage).skin] ?? HERO_SKINS.spiderman
+    if (!enabled) {
       disposer?.()
       disposer = undefined
+      activeSkinId = ''
+      return
     }
+    if (disposer !== undefined && activeSkinId === theme.id) return
+    disposer?.()
+    disposer = ctx.effect(() => {
+      document.body.dataset.dshMarvelSkin = theme.id
+
+      const chrome = document.createElement('div')
+      chrome.dataset.dshSpidermanChrome = ''
+      chrome.className = cls('chrome')
+      document.body.appendChild(chrome)
+
+      const web = document.createElement('div')
+      web.dataset.dshSpidermanWeb = ''
+      web.className = cls('web')
+      const mark = document.createElement('div')
+      mark.className = cls('webMark')
+      mark.style.backgroundImage = `url(${theme.markUrl})`
+      web.appendChild(mark)
+      document.body.appendChild(web)
+
+      const disposers: Array<() => void> = []
+      disposers.push(mountReveal({ peter: theme.figures.reveal, suit: theme.figures.base }))
+      disposers.push(mountSidebarChrome(theme))
+      disposers.push(mountSettingsMark(theme.markUrl))
+
+      return () => {
+        chrome.remove()
+        web.remove()
+        delete document.body.dataset.dshMarvelSkin
+        for (const dispose of disposers.splice(0)) dispose()
+      }
+    }, 'ui-skin-spiderman: theme')
+    activeSkinId = theme.id
   }
-  const onToggle = (event: Event): void => {
-    const enabled = (event as CustomEvent<{ enabled?: boolean }>).detail?.enabled
-    if (typeof enabled === 'boolean') sync()
+
+  const onSkinChange = (event: Event): void => {
+    const id = (event as CustomEvent<{ id?: string }>).detail?.id
+    if (typeof id === 'string') sync()
   }
-  window.addEventListener(APP_TOGGLE_EVENT, onToggle)
+  window.addEventListener(MARVEL_SKIN_EVENT, onSkinChange)
+  window.addEventListener(APP_TOGGLE_EVENT, () => sync())
   window.addEventListener('storage', (event) => {
-    if (event.key === APP_STORAGE_KEY) sync()
+    if (event.key === APP_STORAGE_KEY || event.key === MARVEL_STORAGE_KEY) sync()
   })
   sync()
 }

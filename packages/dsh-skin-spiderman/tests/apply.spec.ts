@@ -19,9 +19,9 @@ describe('spiderman skin apply/dispose', () => {
     document.body.innerHTML = ''
     const ctx = createCtx() as never
     apply(ctx)
-    expect(document.body.dataset.dshSpiderman).toBe('')
+    expect(document.body.dataset.dshMarvelSkin).toBe('spiderman')
     ;(ctx as { dispose(): void }).dispose()
-    expect(document.body.dataset.dshSpiderman).toBeUndefined()
+    expect(document.body.dataset.dshMarvelSkin).toBeUndefined()
   })
 
   it('removes injected chrome on dispose', () => {
