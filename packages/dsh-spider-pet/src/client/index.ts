@@ -80,6 +80,14 @@ export function apply(ctx: ClientContext): void {
   let petMount: (() => void) | undefined
   let pollTimer: number | undefined
   let lastPetId = initial.pet
+  /**
+   * Re-entrancy guard: startPet() calls controller.setDisplay(), which
+   * notifies the subscribed syncEnabled() listener before petMount is
+   * assigned. Without this guard the listener re-enters startPet() and the
+   * recursion mounts a pet (and leaks its rAF/fetch loops) at every stack
+   * level — the whole page grinds to a halt.
+   */
+  let mounting = false
 
   const currentContent = (): HeroPetContent => {
     const selections = readMarvelSelections(storage)
@@ -96,29 +104,35 @@ export function apply(ctx: ClientContext): void {
   }
 
   const startPet = (): void => {
-    const content = currentContent()
-    lastPetId = content.id
-    controller.setDisplay({ name: content.name })
-    petMount = mountPet(controller, content.meta, content.table, content.spriteUrl)
-    const poll = (): void => {
-      fetch(ACTIVITY_STATE_URL)
-        .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status ${res.status}`))))
-        .then((state: { phase?: string; phrase?: string; line?: string }) => {
-          const activity = state.phase === undefined ? undefined : PHASE_MAP[state.phase]
-          if (activity === undefined) return
-          let bubble = state.phrase ?? state.line ?? undefined
-          // Working without a tool call has no host phrase; show a default
-          // status bubble so the pet always says what it is doing.
-          if (activity === 'thinking' && bubble === undefined) bubble = '正在思考…'
-          controller.setActivity(activity, bubble)
-        })
-        .catch(() => {
-          // Host API unavailable (plugin toggled off / server restarted):
-          // the pet keeps its last known animation; next poll resyncs.
-        })
+    if (mounting) return
+    mounting = true
+    try {
+      const content = currentContent()
+      lastPetId = content.id
+      controller.setDisplay({ name: content.name })
+      petMount = mountPet(controller, content.meta, content.table, content.spriteUrl)
+      const poll = (): void => {
+        fetch(ACTIVITY_STATE_URL)
+          .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status ${res.status}`))))
+          .then((state: { phase?: string; phrase?: string; line?: string }) => {
+            const activity = state.phase === undefined ? undefined : PHASE_MAP[state.phase]
+            if (activity === undefined) return
+            let bubble = state.phrase ?? state.line ?? undefined
+            // Working without a tool call has no host phrase; show a default
+            // status bubble so the pet always says what it is doing.
+            if (activity === 'thinking' && bubble === undefined) bubble = '正在思考…'
+            controller.setActivity(activity, bubble)
+          })
+          .catch(() => {
+            // Host API unavailable (plugin toggled off / server restarted):
+            // the pet keeps its last known animation; next poll resyncs.
+          })
+      }
+      poll()
+      pollTimer = window.setInterval(poll, POLL_MS)
+    } finally {
+      mounting = false
     }
-    poll()
-    pollTimer = window.setInterval(poll, POLL_MS)
   }
 
   const syncEnabled = (): void => {
