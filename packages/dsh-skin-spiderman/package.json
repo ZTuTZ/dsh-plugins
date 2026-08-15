@@ -1,6 +1,6 @@
 {
-  "name": "@deepseek-ai/dsh-client-ui-skin-spiderman",
-  "description": "Spider-Man red-blue skin for the dsh web GUI: scoped theme, mouse-follow fluid canvas and Peter/suit identity reveal",
+  "name": "@deepseek-ai/dsh-marvel-skin",
+  "description": "Marvel hero skin runtime for the dsh web GUI: scoped themes, hero content registry (Spider-Man first), mouse-follow fluid canvas and identity reveal",
   "version": "0.1.0",
   "private": true,
   "type": "module",

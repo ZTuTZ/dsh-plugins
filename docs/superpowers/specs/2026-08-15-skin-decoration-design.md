@@ -53,7 +53,7 @@
 - `dsh:marvel-skin-change` / `dsh:marvel-pet-change` 切换事件；跨标签页用 storage 事件同步
 - 总开关沿用 `dsh.spiderApp.v1` + `dsh:spider-app-toggle`，行为不变
 
-### 桌宠侧（dsh-spider-pet）
+### 桌宠侧（@deepseek-ai/dsh-marvel-pet）
 
 - `core/content.ts`：`HeroPetContent`（id/label/name/spriteUrl/meta/table）
 - `heroes/spiderman.ts`：蜘蛛侠内容（原精灵图与帧表迁入）；`HERO_PETS` 注册表，未知 id 回退蜘蛛侠
@@ -61,7 +61,7 @@
 - 设置 tab 升级为「漫威」控制中心（`MarvelSettingsTab`）：总开关 + 桌宠选择 + 皮肤选择；切换时写存储、广播事件
 - 桌宠热切换：监听 pet 事件/存储，替换精灵图、帧表与名字，位置与大小保留
 
-### 皮肤侧（dsh-skin-spiderman）
+### 皮肤侧（@deepseek-ai/dsh-marvel-skin）
 
 - `core/theme.ts`：`HeroSkinContent`（id/label/kicker/statusName/markUrl/textureUrl/figures）
 - `themes/spiderman.ts`：蜘蛛侠主题内容；`HERO_SKINS` 注册表，未知 id 回退蜘蛛侠

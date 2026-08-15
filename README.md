@@ -10,10 +10,10 @@ DeepSeek Harness（dsh）插件集 · v0.2
 
 | 包名 | 说明 |
 | --- | --- |
-| `@deepseek-ai/dsh-spider-pet` | 漫威桌宠运行时 + 英雄内容（当前：蜘蛛侠 Peter Parker） |
-| `@deepseek-ai/dsh-client-ui-skin-spiderman` | 漫威皮肤运行时 + 英雄主题（当前：蜘蛛侠红蓝） |
+| `@deepseek-ai/dsh-marvel-pet` | 漫威桌宠运行时 + 英雄内容（当前：蜘蛛侠 Peter Parker） |
+| `@deepseek-ai/dsh-marvel-skin` | 漫威皮肤运行时 + 英雄主题（当前：蜘蛛侠红蓝） |
 
-### 🕷️ dsh-spider-pet 漫威桌宠
+### 🕷️ dsh-marvel-pet 漫威桌宠
 
 - **状态动画**：待机呼吸、等待踢脚、思考托腮、欢呼跳跃、摸头享受、沮丧趴地，跟随对话状态自动切换（收到用户消息 → 等待，开始推理 → 思考，调用工具 → 显示工具名，回合结束 → 欢呼，回合出错 → 沮丧）
 - **点击互动**：单击桌宠触发跳跃欢呼并显示“嗷呜～”气泡；双击摸头，播放享受动画并给出气泡反馈
@@ -23,7 +23,7 @@ DeepSeek Harness（dsh）插件集 · v0.2
 - **设置中心**：在「设置 → 插件 → 漫威」中一键总开关，并独立选择**皮肤英雄**与**桌宠英雄**，选择即时热切换（桌宠位置/大小保留）
 - **渲染**：精灵图帧动画，通过 canvas 逐帧绘制，避免巨幅背景图在部分 GPU 上合成时的花屏/截断问题
 
-### 🎨 dsh-client-ui-skin-spiderman 漫威皮肤
+### 🎨 dsh-marvel-skin 漫威皮肤
 
 - **红蓝主题**：通过覆盖官方设计令牌（design tokens）实现全局红蓝蜘蛛侠配色，左右工作区与对话区样式统一变更
 - **全局细节**：滚动条、选区、聚焦环、链接配色均跟随红蓝主题；左侧工作区叠加细蛛网纹理与角落蜘蛛标水印，新建会话按钮带红蓝渐变描边
@@ -70,14 +70,14 @@ DeepSeek Harness（dsh）插件集 · v0.2
          "bundles": [
            "@deepseek-ai/dsh-base",
            "@deepseek-ai/dsh-web-app",
-           "@deepseek-ai/dsh-spider-pet",
-           "@deepseek-ai/dsh-client-ui-skin-spiderman"
+           "@deepseek-ai/dsh-marvel-pet",
+           "@deepseek-ai/dsh-marvel-skin"
          ]
        }
      },
      "dependencies": {
-       "@deepseek-ai/dsh-spider-pet": "link:/你的路径/dsh-plugins/packages/dsh-spider-pet",
-       "@deepseek-ai/dsh-client-ui-skin-spiderman": "link:/你的路径/dsh-plugins/packages/dsh-skin-spiderman"
+      "@deepseek-ai/dsh-marvel-pet": "link:/你的路径/dsh-plugins/packages/dsh-spider-pet",
+      "@deepseek-ai/dsh-marvel-skin": "link:/你的路径/dsh-plugins/packages/dsh-skin-spiderman"
      }
    }
    ```

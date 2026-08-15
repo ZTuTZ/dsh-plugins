@@ -1,6 +1,6 @@
 {
-  "name": "@deepseek-ai/dsh-spider-pet",
-  "description": "Spider-Man cartoon pet for the dsh web GUI: sprite-sheet animation driven by model activity, pet/hide/summon/rename interactions, hot-pluggable via a profile bundle",
+  "name": "@deepseek-ai/dsh-marvel-pet",
+  "description": "Marvel hero pet runtime for the dsh web GUI: sprite-sheet animation driven by model activity, hero content registry (Spider-Man first), pet/hide/summon interactions, hot-pluggable via a profile bundle",
   "version": "0.1.0",
   "private": true,
   "type": "module",
