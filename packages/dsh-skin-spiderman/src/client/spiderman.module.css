@@ -531,25 +531,40 @@ body[data-dsh-spiderman] a:visited {
   color: var(--dsw-static-blue-600);
 }
 
-/* ===== Workspace (left sidebar column) accents ===== */
+/* ===== Workspace (left sidebar column) =====
+   The suit-texture backdrop (texture + dark scrim + red/blue ambient glows)
+   is applied from apply() as an inline background-image so it can reference
+   the inlined data URL; this rule only keeps the color fallback. */
 body[data-dsh-spiderman] [class*="sidebarCol"] {
   background-color: var(--dsw-specific-sidebar-fill);
-  background-image:
-    radial-gradient(120% 70% at 50% 0%, rgba(217, 43, 58, 0.1), transparent 62%),
-    radial-gradient(90% 50% at 100% 100%, rgba(59, 111, 212, 0.08), transparent 60%),
-    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 22px),
-    repeating-linear-gradient(25deg, rgba(217, 43, 58, 0.016) 0 1px, transparent 1px 30px);
+}
+
+/* ===== Session list: glass rows, red edge glow on the active one ===== */
+body[data-dsh-spiderman] [role="treeitem"] {
+  border-radius: 10px;
+  background: rgba(28, 21, 35, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+body[data-dsh-spiderman] [role="treeitem"]:hover {
+  background: rgba(217, 43, 58, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(217, 43, 58, 0.18);
+}
+body[data-dsh-spiderman] [role="treeitem"][aria-selected="true"] {
+  background: linear-gradient(120deg, rgba(217, 43, 58, 0.22), rgba(59, 111, 212, 0.12) 80%);
+  box-shadow:
+    inset 0 0 0 1px rgba(217, 43, 58, 0.5),
+    0 6px 18px rgba(217, 43, 58, 0.18);
 }
 
 body[data-dsh-spiderman] [class*="_newSession"] {
-  border-color: rgba(217, 43, 58, 0.4);
-  background-color: rgba(217, 43, 58, 0.08);
-  background-image: linear-gradient(120deg, rgba(217, 43, 58, 0.14), rgba(59, 111, 212, 0.16));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-color: rgba(217, 43, 58, 0.42);
+  background-color: rgba(217, 43, 58, 0.14);
+  background-image: linear-gradient(120deg, rgba(217, 43, 58, 0.24), rgba(59, 111, 212, 0.2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 14px rgba(217, 43, 58, 0.16);
 }
 body[data-dsh-spiderman] [class*="_newSession"]:hover {
-  border-color: rgba(217, 43, 58, 0.55);
-  background-image: linear-gradient(120deg, rgba(217, 43, 58, 0.22), rgba(59, 111, 212, 0.24));
+  border-color: rgba(217, 43, 58, 0.6);
+  background-image: linear-gradient(120deg, rgba(217, 43, 58, 0.34), rgba(59, 111, 212, 0.28));
 }
 /* Keep the collapsed rail icon quiet */
 body[data-dsh-spiderman] [class*="_collapsed"] [class*="_newSession"] {
@@ -561,6 +576,56 @@ body[data-dsh-spiderman] [class*="_collapsed"] [class*="_newSession"] {
 /* ===== Composer seat: soft red glow above the input ===== */
 body[data-dsh-spiderman] [data-composer-seat] {
   box-shadow: 0 -14px 30px -22px rgba(217, 43, 58, 0.55);
+}
+
+/* ===== Sidebar injected chrome: comic kicker + pet status row ===== */
+.sidebarKicker {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 14px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: rgb(240, 74, 88);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.sidebarKickerMark {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 0 6px rgba(217, 43, 58, 0.6));
+}
+.sidebarStatus {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 10px;
+  padding: 8px 11px;
+  border-radius: 11px;
+  background: rgba(20, 12, 26, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: rgb(179, 169, 186);
+  white-space: nowrap;
+}
+.sidebarStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(53, 196, 107);
+  box-shadow: 0 0 8px rgba(53, 196, 107, 0.8);
+  flex: none;
+}
+/* Hide injected chrome when the sidebar collapses to the icon rail */
+body[data-dsh-spiderman] [class*="_collapsed"] [class*="sidebarKicker"],
+body[data-dsh-spiderman] [class*="_collapsed"] [class*="sidebarStatus"] {
+  display: none;
 }
 
 /* ===== Ambient web overlay (injected by apply(); texture + spider mark) ===== */
