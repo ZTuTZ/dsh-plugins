@@ -33,6 +33,10 @@ const PHASE_MAP: Record<string, PetActivity> = {
 
 const ACTIVITY_STATE_URL = '/api/spider-pet/state'
 const POLL_MS = 400
+/** Pet status broadcast consumed by the skin plugin's sidebar status row.
+ *  The same constant is duplicated in dsh-skin-spiderman because cross-plugin
+ *  value imports are forbidden by the client purity gate. */
+const PET_STATUS_EVENT = 'dsh:marvel-pet-status'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -79,6 +83,8 @@ export function apply(ctx: ClientContext): void {
   const settingsScope = ctx.settingsScope.bind<{ enabled?: boolean }>({ namespace: 'spider-pet' })
   let petMount: (() => void) | undefined
   let pollTimer: number | undefined
+  /** Removes the visibilitychange listener installed by the current pet. */
+  let visibilityCleanup: (() => void) | undefined
   let lastPetId = initial.pet
   /**
    * Re-entrancy guard: startPet() calls controller.setDisplay(), which
@@ -94,13 +100,55 @@ export function apply(ctx: ClientContext): void {
     return HERO_PETS[selections.pet] ?? HERO_PETS.spiderman
   }
 
-  const stopPet = (): void => {
-    petMount?.()
-    petMount = undefined
+  const pollActivity = (): void => {
+    // Abort after 3s so a hung host never leaves an in-flight request
+    // behind; the next poll resyncs.
+    const abortCtl = new AbortController()
+    const timeout = window.setTimeout(() => abortCtl.abort(), 3000)
+    fetch(ACTIVITY_STATE_URL, { signal: abortCtl.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status ${res.status}`))))
+      .then((state: { phase?: string; phrase?: string; line?: string }) => {
+        const activity = state.phase === undefined ? undefined : PHASE_MAP[state.phase]
+        if (activity === undefined) return
+        let bubble = state.phrase ?? state.line ?? undefined
+        // Working without a tool call has no host phrase; show a default
+        // status bubble so the pet always says what it is doing.
+        if (activity === 'thinking' && bubble === undefined) bubble = '正在思考…'
+        controller.setActivity(activity, bubble)
+      })
+      .catch(() => {
+        // Host API unavailable (plugin toggled off / server restarted):
+        // the pet keeps its last known animation; next poll resyncs.
+      })
+      .finally(() => window.clearTimeout(timeout))
+  }
+
+  const startPolling = (): void => {
+    if (pollTimer === undefined) pollTimer = window.setInterval(pollActivity, POLL_MS)
+  }
+
+  const stopPolling = (): void => {
     if (pollTimer !== undefined) {
       window.clearInterval(pollTimer)
       pollTimer = undefined
     }
+  }
+
+  // Pause polling while the page is hidden; resume (with an immediate
+  // refresh) when it becomes visible again.
+  const onVisibility = (): void => {
+    if (document.hidden) stopPolling()
+    else {
+      pollActivity()
+      startPolling()
+    }
+  }
+
+  const stopPet = (): void => {
+    petMount?.()
+    petMount = undefined
+    stopPolling()
+    visibilityCleanup?.()
   }
 
   const startPet = (): void => {
@@ -111,25 +159,10 @@ export function apply(ctx: ClientContext): void {
       lastPetId = content.id
       controller.setDisplay({ name: content.name })
       petMount = mountPet(controller, content.meta, content.table, content.spriteUrl)
-      const poll = (): void => {
-        fetch(ACTIVITY_STATE_URL)
-          .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status ${res.status}`))))
-          .then((state: { phase?: string; phrase?: string; line?: string }) => {
-            const activity = state.phase === undefined ? undefined : PHASE_MAP[state.phase]
-            if (activity === undefined) return
-            let bubble = state.phrase ?? state.line ?? undefined
-            // Working without a tool call has no host phrase; show a default
-            // status bubble so the pet always says what it is doing.
-            if (activity === 'thinking' && bubble === undefined) bubble = '正在思考…'
-            controller.setActivity(activity, bubble)
-          })
-          .catch(() => {
-            // Host API unavailable (plugin toggled off / server restarted):
-            // the pet keeps its last known animation; next poll resyncs.
-          })
-      }
-      poll()
-      pollTimer = window.setInterval(poll, POLL_MS)
+      document.addEventListener('visibilitychange', onVisibility)
+      visibilityCleanup = () => document.removeEventListener('visibilitychange', onVisibility)
+      pollActivity()
+      startPolling()
     } finally {
       mounting = false
     }
@@ -158,6 +191,25 @@ export function apply(ctx: ClientContext): void {
   }
 
   const unsubscribe = controller.subscribe(syncEnabled)
+  // Mirror pet state (name / activity / visibility) to the skin plugin so the
+  // sidebar status row stays live instead of showing a static "在线".
+  let lastStatusKey = ''
+  const broadcastPetStatus = (): void => {
+    const snapshot = controller.getSnapshot()
+    const name = snapshot.persist.display.name
+    const key = `${name}|${snapshot.activity}|${snapshot.persist.display.visible}|${snapshot.appEnabled}`
+    if (key === lastStatusKey) return
+    lastStatusKey = key
+    window.dispatchEvent(new CustomEvent(PET_STATUS_EVENT, {
+      detail: {
+        name,
+        activity: snapshot.activity,
+        visible: snapshot.persist.display.visible,
+        appEnabled: snapshot.appEnabled,
+      },
+    }))
+  }
+  const unsubscribeStatus = controller.subscribe(broadcastPetStatus)
   // Keep in sync with a toggle from another tab or the skin plugin.
   const onAppToggle = (event: Event): void => {
     const enabled = (event as CustomEvent<{ enabled?: boolean }>).detail?.enabled
@@ -169,15 +221,27 @@ export function apply(ctx: ClientContext): void {
     const id = (event as CustomEvent<{ id?: string }>).detail?.id
     if (typeof id === 'string') resyncPet()
   }
-  window.addEventListener(APP_TOGGLE_EVENT, onAppToggle)
-  window.addEventListener(MARVEL_PET_EVENT, onPetChange)
-  window.addEventListener('storage', (event) => {
+  const onStorage = (event: StorageEvent): void => {
     if (event.key === APP_STORAGE_KEY) {
       const enabled = readAppEnabled(localStorage)
       if (enabled !== controller.getAppEnabled()) controller.setAppEnabled(enabled)
     } else if (event.key === MARVEL_STORAGE_KEY) {
       resyncPet()
     }
-  })
+  }
+  window.addEventListener(APP_TOGGLE_EVENT, onAppToggle)
+  window.addEventListener(MARVEL_PET_EVENT, onPetChange)
+  window.addEventListener('storage', onStorage)
   syncEnabled()
+
+  // Tear everything down when the plugin is unloaded: listeners, poller,
+  // visibility hook, and the mounted pet DOM.
+  ctx.effect(() => () => {
+    window.removeEventListener(APP_TOGGLE_EVENT, onAppToggle)
+    window.removeEventListener(MARVEL_PET_EVENT, onPetChange)
+    window.removeEventListener('storage', onStorage)
+    unsubscribe()
+    unsubscribeStatus()
+    stopPet()
+  }, 'spider-pet: teardown')
 }

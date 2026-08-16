@@ -28,12 +28,23 @@ function readAppEnabled(): boolean {
 const SIDEBAR_SELECTOR = '[class*="sidebarCol"]'
 const REGION_SELECTOR = '[class*="_regionArea"]'
 const FOOT_SELECTOR = '[class*="_footArea"]'
+/** Pet status broadcast (kept in sync with dsh-spider-pet; cross-plugin
+ *  value imports are forbidden by the client purity gate). */
+const PET_STATUS_EVENT = 'dsh:marvel-pet-status'
+const PET_STATUS_LABEL: Record<string, string> = {
+  idle: '待机',
+  waiting: '等待回复',
+  thinking: '思考中',
+  done: '欢呼',
+  pet: '被摸头',
+  failed: '沮丧',
+}
 
 /**
  * Workspace chrome for the active skin hero: suit-texture backdrop plus a
  * comic kicker (with the hero emblem) above the session list and a
- * "«name» · 在线" status row above the sidebar footer. Every write is
- * retracted on dispose.
+ * live "«name» · «状态»" status row above the sidebar footer (driven by the
+ * pet plugin's status broadcasts). Every write is retracted on dispose.
  */
 function mountSidebarChrome(theme: HeroSkinContent): () => void {
   let mounted = false
@@ -76,14 +87,37 @@ function mountSidebarChrome(theme: HeroSkinContent): () => void {
     const dot = document.createElement('span')
     dot.className = cls('sidebarStatusDot')
     dot.setAttribute('aria-hidden', 'true')
+    dot.dataset.status = 'online'
+    const statusText = document.createTextNode(`${theme.statusName} · 在线`)
     status.appendChild(dot)
-    status.appendChild(document.createTextNode(`${theme.statusName} · 在线`))
+    status.appendChild(statusText)
     foot.before(status)
+
+    // Follow the pet's live state: the name tracks renames, the label tracks
+    // the host activity, and the dot color reflects thinking/failed/hidden.
+    const onPetStatus = (event: Event): void => {
+      const detail = (event as CustomEvent<{ name?: string; activity?: string; visible?: boolean }>).detail
+      if (!detail || typeof detail.name !== 'string') return
+      if (detail.visible === false) {
+        statusText.nodeValue = `${detail.name} · 待命中`
+        dot.dataset.status = 'hidden'
+        return
+      }
+      const label = detail.activity !== undefined && PET_STATUS_LABEL[detail.activity]
+        ? PET_STATUS_LABEL[detail.activity]
+        : '在线'
+      statusText.nodeValue = `${detail.name} · ${label}`
+      dot.dataset.status = detail.activity === 'thinking' ? 'thinking'
+        : detail.activity === 'failed' ? 'failed'
+        : 'online'
+    }
+    window.addEventListener(PET_STATUS_EVENT, onPetStatus)
 
     mounted = true
     cleanup = () => {
       kicker.remove()
       status.remove()
+      window.removeEventListener(PET_STATUS_EVENT, onPetStatus)
       for (const [prop, value] of previous) {
         if (value === '') sidebar.style.removeProperty(prop)
         else sidebar.style.setProperty(prop, value)

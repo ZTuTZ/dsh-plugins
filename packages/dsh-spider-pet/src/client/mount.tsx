@@ -17,26 +17,6 @@ export function mountPet(
   const root: Root = createRoot(container)
 
   let panelOpen = false
-  const togglePanel = (): void => { panelOpen = !panelOpen }
-
-  const onDrag = (event: React.PointerEvent): void => {
-    event.preventDefault()
-    const startX = event.clientX
-    const startY = event.clientY
-    const base = controller.getSnapshot().persist.display
-    const move = (ev: PointerEvent): void => {
-      controller.setDisplay({
-        right: Math.max(0, base.right - (ev.clientX - startX)),
-        bottom: Math.max(0, base.bottom - (ev.clientY - startY)),
-      })
-    }
-    const up = (): void => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
-  }
 
   const render = (): void => {
     root.render(
@@ -49,9 +29,16 @@ export function mountPet(
         onPetInteract={() => { controller.interactPet() }}
         onPanel={togglePanel}
         panelOpen={panelOpen}
-        onDrag={onDrag}
       />,
     )
+  }
+  // Flip the flag and immediately re-render: React only sees `panelOpen`
+  // through the props we pass here, so toggling the closure variable alone
+  // would leave the panel stuck until some unrelated notify() triggers a
+  // render (the open/close felt delayed or dead entirely).
+  const togglePanel = (): void => {
+    panelOpen = !panelOpen
+    render()
   }
   const unsubscribe = controller.subscribe(render)
   render()

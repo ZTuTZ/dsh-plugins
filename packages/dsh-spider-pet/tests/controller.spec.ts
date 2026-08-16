@@ -21,11 +21,29 @@ describe('loadPersist', () => {
     expect(p.display.name).toBe('Peter Parker')
   })
 
-  it('parses stored JSON but keeps the fixed pet name', () => {
+  it('parses stored JSON and keeps a custom pet name', () => {
     const s = memoryStorage(JSON.stringify({ display: { ...fallback.display, name: '小蛛', size: 200 } }))
     const p = loadPersist(s, fallback)
     expect(p.display.size).toBe(200)
+    expect(p.display.name).toBe('小蛛')
+  })
+
+  it('ignores an empty stored name and falls back to the hero name', () => {
+    const s = memoryStorage(JSON.stringify({ display: { ...fallback.display, name: '' } }))
+    const p = loadPersist(s, fallback)
     expect(p.display.name).toBe('Peter Parker')
+  })
+
+  it('skips redundant notifications for unchanged activity', () => {
+    const controller = new PetController({ storage: memoryStorage(), now: () => 0 }, 'Peter Parker')
+    let notified = 0
+    controller.subscribe(() => { notified += 1 })
+    controller.setActivity('thinking', '干活')
+    expect(notified).toBe(1)
+    controller.setActivity('thinking', '干活')
+    expect(notified).toBe(1)
+    controller.setActivity('thinking', '换个说法')
+    expect(notified).toBe(2)
   })
 })
 

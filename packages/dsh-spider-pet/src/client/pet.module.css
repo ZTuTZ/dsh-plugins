@@ -14,22 +14,83 @@
   display: block;
   touch-action: none;
 }
+
+/* Hover-only entry to the pet panel (right-click also opens it). Kept fully
+   inside the pet box so hovering it never leaves the .petView:hover area
+   (an overflowed button would vanish exactly when the cursor reaches it). */
+.petGear {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  /* Above the full-bleed canvas (which otherwise covers the button). */
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(217, 43, 58, 0.55);
+  background: rgba(18, 15, 26, 0.92);
+  color: #f2f4f8;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.petView:hover .petGear,
+.petGear:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.petGear:hover {
+  transform: scale(1.12);
+  border-color: rgba(217, 43, 58, 0.9);
+}
+
 .bubble {
   position: absolute;
-  bottom: calc(100% + 4px);
+  bottom: calc(100% + 14px);
   left: 50%;
-  transform: translateX(-50%);
-  background: rgba(20, 24, 33, 0.92);
-  color: #fff;
-  border-radius: 8px;
-  padding: 4px 10px;
+  z-index: 4;
+  transform: translateX(-50%) translateY(3px) scale(0.92);
+  transform-origin: bottom center;
+  max-width: min(280px, calc(100vw - 24px));
+  background: linear-gradient(165deg, rgba(46, 17, 26, 0.97), rgba(16, 10, 20, 0.97));
+  border: 1px solid rgba(217, 43, 58, 0.55);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45), 0 0 14px rgba(217, 43, 58, 0.16);
+  color: #ffeef0;
+  border-radius: 12px 12px 12px 4px;
+  padding: 6px 12px;
   font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease;
   pointer-events: none;
 }
-.bubble[data-show='true'] { opacity: 1; }
+.bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 9px;
+  height: 9px;
+  background: linear-gradient(135deg, rgba(46, 17, 26, 0.97), rgba(16, 10, 20, 0.97));
+  border-right: 1px solid rgba(217, 43, 58, 0.55);
+  border-bottom: 1px solid rgba(217, 43, 58, 0.55);
+  border-radius: 0 0 2px 0;
+}
+.bubble[data-show='true'] {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
 .summon {
   position: fixed;
   z-index: 2147483000;
@@ -49,17 +110,19 @@
   color: #ffd7d7;
   background: rgba(30, 20, 40, 0.95);
 }
+
 .panel {
   position: absolute;
   right: 0;
   bottom: calc(100% + 8px);
-  width: 220px;
-  background: rgba(18, 15, 26, 0.95);
+  z-index: 3;
+  width: 240px;
+  background: rgba(18, 15, 26, 0.96);
   border: 1px solid rgba(217, 43, 58, 0.4);
   border-radius: 10px;
   color: #f2f4f8;
   font-size: 13px;
-  padding: 8px;
+  padding: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   pointer-events: auto;
 }
@@ -71,20 +134,62 @@
 }
 .panelHeader span {
   flex: 1;
-  color: #9aa4b2;
-  font-size: 12px;
+  color: #e8ebf2;
+  font-size: 13px;
+  font-weight: 600;
 }
 .panelHeader button {
   background: transparent;
   border: 0;
   color: #9aa4b2;
   cursor: pointer;
+  font-size: 15px;
+  padding: 4px 10px;
+  border-radius: 6px;
 }
+.panelHeader button:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .panelRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 9px;
+}
+.panelLabel {
+  flex: none;
+  width: 48px;
+  color: #9aa4b2;
+  font-size: 12px;
+}
+.panelStatus {
+  color: #ffb3b3;
+  font-size: 12px;
+}
+.panelValue {
+  flex: none;
+  color: #9aa4b2;
+  font-size: 11px;
+  min-width: 42px;
+  text-align: right;
+}
+.panelRow input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: #d92b3a;
+  margin: 0;
+}
+.panelInput {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f2f4f8;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  outline: none;
+}
+.panelInput:focus {
+  border-color: rgba(217, 43, 58, 0.7);
 }
 .panelRow button {
   background: rgba(217, 43, 58, 0.18);
@@ -93,13 +198,8 @@
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
-}
-.panelRow input {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #f2f4f8;
-  border-radius: 6px;
-  padding: 4px 8px;
   font-size: 12px;
+}
+.panelRow button:hover {
+  background: rgba(217, 43, 58, 0.32);
 }

@@ -20,8 +20,8 @@ export const APP_STORAGE_KEY = 'dsh.spiderApp.v1'
 export const APP_TOGGLE_EVENT = 'dsh:spider-app-toggle'
 
 export const defaultPersist: PetPersist = {
-  // The pet name is fixed per hero (the rename feature was removed); the
-  // controller fills it in from the selected hero content at construction.
+  // The pet name defaults to the selected hero's name; users may rename it
+  // from the pet panel (the rename feature was restored).
   display: { visible: true, size: 160, right: 24, bottom: 20, name: '' },
 }
 
@@ -37,9 +37,11 @@ export function loadPersist(
       display: {
         ...fallback.display,
         ...parsed.display,
-        // The pet name is fixed (the rename feature was removed): always use
-        // the default instead of any legacy value lingering in storage.
-        name: fallback.display.name,
+        // The pet may be renamed; keep any stored custom name, falling back
+        // to the hero name only when nothing was persisted yet.
+        name: typeof parsed.display?.name === 'string' && parsed.display.name !== ''
+          ? parsed.display.name
+          : fallback.display.name,
       },
     }
   } catch {
@@ -127,6 +129,9 @@ export class PetController {
   }
 
   setActivity(activity: PetActivity, bubble?: string): void {
+    // Skip redundant notifications: the poller resends the same phase on
+    // every tick, and a notify triggers a full PetView re-render.
+    if (this.activity === activity && this.bubble === bubble) return
     this.activity = activity
     this.bubble = bubble
     this.notify()
